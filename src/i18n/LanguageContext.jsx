@@ -322,7 +322,7 @@ const translations = {
 const LanguageContext = createContext();
 
 export const LanguageProvider = ({ children }) => {
-    const [lang, setLang] = useState('ko');
+    const [lang, setLang] = useState('en');
 
     const t = useCallback((key) => {
         return translations[lang]?.[key] || translations['en']?.[key] || key;
