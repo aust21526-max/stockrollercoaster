@@ -22,7 +22,16 @@ const Leaderboard = () => {
         setError(null);
         try {
             const res = await fetch(API_BASE);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            if (!res.ok) {
+                let msg = `HTTP ${res.status}`;
+                try {
+                    const errRes = await res.json();
+                    if (errRes.error) msg = errRes.error;
+                } catch (e) {
+                    console.error('Failed to parse error response', e);
+                }
+                throw new Error(msg);
+            }
             const json = await res.json();
             setData(json);
         } catch (err) {

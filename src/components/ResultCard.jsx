@@ -119,9 +119,20 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
                     startDate: data[0].date,
                 }),
             });
-            if (!res.ok) throw new Error('Failed');
+            if (!res.ok) {
+                let msg = 'Failed';
+                try {
+                    const errRes = await res.json();
+                    if (errRes.error) msg = errRes.error;
+                } catch (e) { /* ignore */ }
+                throw new Error(msg);
+            }
             setLeaderboardStatus('success');
-        } catch {
+        } catch (err) {
+            console.error(err);
+            if (err.message && err.message.includes('KV namespace')) {
+                alert(`Configuration Error: ${err.message}`);
+            }
             setLeaderboardStatus('error');
             setTimeout(() => setLeaderboardStatus(null), 3000);
         }

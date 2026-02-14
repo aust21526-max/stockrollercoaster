@@ -50,6 +50,10 @@ export async function onRequestGet(context) {
     const { env } = context;
 
     try {
+        if (!env.LEADERBOARD) {
+            throw new Error('KV namespace "LEADERBOARD" is not bound. Check Cloudflare Dashboard > Settings > Functions > KV Namespace Bindings.');
+        }
+
         const entries = await getOrInitLeaderboard(env);
 
         // Sort into categories
@@ -89,6 +93,10 @@ export async function onRequestPost(context) {
     const { env, request } = context;
 
     try {
+        if (!env.LEADERBOARD) {
+            throw new Error('KV namespace "LEADERBOARD" is not bound.');
+        }
+
         const body = await request.json();
         const { nickname, ticker, returnPct, mdd, grade, emoji, startDate } = body;
 
