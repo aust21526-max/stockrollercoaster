@@ -2,7 +2,9 @@ import React, { useRef, useState, useMemo } from 'react';
 import { toPng } from 'html-to-image';
 import { Share2, Download, TrendingDown, Clock, Award, Flame, Zap, BookOpen, Copy, Swords, Trophy } from 'lucide-react';
 import { calculateMaxDrawdown, getRideGrade, formatDuration, getFactBomb, detectEvents, calculateSurvivalRate, getBadges, ALL_BADGES } from '../utils/analysis';
+import { saveRide } from '../utils/rideHistory';
 import { useLang } from '../i18n/LanguageContext';
+import { Link } from 'react-router-dom';
 import BadgeModal from './BadgeModal';
 import NicknameModal from './NicknameModal';
 
@@ -15,6 +17,26 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
     const [leaderboardStatus, setLeaderboardStatus] = useState(null);
     const [showNicknameModal, setShowNicknameModal] = useState(false);
     const [nicknameMode, setNicknameMode] = useState('leaderboard'); // 'leaderboard' | 'challenge'
+
+    const [savedRideId, setSavedRideId] = useState(null);
+
+    // Save ride to history on mount
+    useEffect(() => {
+        if (data && data.length > 0 && !battleInfo) {
+            const ride = saveRide({
+                ticker,
+                startDate: data[0].date,
+                endDate: data[data.length - 1].date,
+                returnPct: ((data[data.length - 1].close - (avgPrice || data[0].close)) / (avgPrice || data[0].close) * 100),
+                mdd: calculateMaxDrawdown(data).maxDrawdown * 100,
+                grade: getRideGrade(calculateMaxDrawdown(data).maxDrawdown, ((data[data.length - 1].close - (avgPrice || data[0].close)) / (avgPrice || data[0].close) * 100)).grade,
+                emoji: getRideGrade(calculateMaxDrawdown(data).maxDrawdown, ((data[data.length - 1].close - (avgPrice || data[0].close)) / (avgPrice || data[0].close) * 100)).emoji,
+                badges: getBadges(((data[data.length - 1].close - (avgPrice || data[0].close)) / (avgPrice || data[0].close) * 100), calculateMaxDrawdown(data).maxDrawdown, Math.ceil((new Date(data[data.length - 1].date) - new Date(data[0].date)) / 86400000)),
+                durationDays: Math.ceil((new Date(data[data.length - 1].date) - new Date(data[0].date)) / 86400000)
+            });
+            if (ride) setSavedRideId(ride.id);
+        }
+    }, [data, ticker]);
 
     if (!data || data.length === 0) return null;
 
@@ -336,6 +358,14 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
                     <BookOpen className="w-3.5 h-3.5" />
                     {t('badgeCollection')}
                 </button>
+
+                <Link
+                    to="/collection"
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-800/60 text-cyan-400 rounded-full text-xs font-medium hover:bg-slate-700 hover:text-cyan-300 transition-all border border-slate-700/50"
+                >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    View Ticket
+                </Link>
 
                 <button
                     onClick={() => {

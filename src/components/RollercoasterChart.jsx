@@ -3,6 +3,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { detectEvents, findPeakAndTrough } from '../utils/analysis';
 import { useLang } from '../i18n/LanguageContext';
 import { Play, RotateCcw, Search, ExternalLink } from 'lucide-react';
+import EventInfoPanel from './EventInfoPanel';
 
 const CustomTooltip = ({ active, payload, label, ticker }) => {
     const { t } = useLang();
@@ -52,7 +53,7 @@ const CustomTooltip = ({ active, payload, label, ticker }) => {
 };
 
 const CustomDot = (props) => {
-    const { cx, cy, payload, ticker } = props;
+    const { cx, cy, payload, ticker, onEventClick } = props;
     if (!cx || !cy || !payload) return null;
 
     const event = payload._event;
@@ -111,7 +112,15 @@ const CustomDot = (props) => {
             style={{ cursor: 'pointer' }}
             onClick={(e) => {
                 e.preventDefault();
-                window.open(`https://www.google.com/search?q=${ticker}+stock+news+${payload.date}`, '_blank');
+                if (onEventClick) {
+                    onEventClick({
+                        type: event,
+                        date: payload.date,
+                        close: payload.close,
+                        change: payload.change,
+                        index: payload.index
+                    });
+                }
             }}
         >
             <circle cx={cx} cy={cy} r={size + 4} fill={bgColor} opacity={0.2} />
@@ -217,6 +226,12 @@ const RollercoasterChart = ({ data, avgPrice, ticker, comparisonData, comparison
 
     const dropCount = events.filter(e => e.type === 'drop').length;
     const loopCount = events.filter(e => e.type === 'loop').length;
+
+    const [selectedEvent, setSelectedEvent] = useState(null);
+
+    const handleEventClick = (eventData) => {
+        setSelectedEvent(eventData);
+    };
 
     if (!data || data.length === 0) return null;
 
@@ -351,7 +366,7 @@ const RollercoasterChart = ({ data, avgPrice, ticker, comparisonData, comparison
                             fill="none"
                             filter="url(#glow)"
                             animationDuration={0} // Manual animation via state slice
-                            dot={<CustomDot ticker={ticker} />}
+                            dot={<CustomDot ticker={ticker} onEventClick={handleEventClick} />}
                             activeDot={{ r: 6, stroke: '#22d3ee', strokeWidth: 2, fill: '#0f172a' }}
                             name={ticker}
                         />
@@ -367,6 +382,17 @@ const RollercoasterChart = ({ data, avgPrice, ticker, comparisonData, comparison
                         />
                     </AreaChart>
                 </ResponsiveContainer>
+
+                {/* Event Info Panel Overlay */}
+                {selectedEvent && (
+                    <div className="absolute bottom-0 left-0 w-full z-30">
+                        <EventInfoPanel
+                            event={selectedEvent}
+                            ticker={ticker}
+                            onClose={() => setSelectedEvent(null)}
+                        />
+                    </div>
+                )}
             </div>
 
             <div className="flex flex-wrap justify-center gap-x-5 gap-y-1 mt-3 text-xs text-slate-500">

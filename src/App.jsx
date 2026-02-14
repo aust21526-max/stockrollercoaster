@@ -15,6 +15,7 @@ import Blog from './pages/Blog';
 import Leaderboard from './components/Leaderboard';
 import PortfolioMode from './components/PortfolioMode';
 import DailyChallenge from './components/DailyChallenge';
+import TicketCollection from './components/TicketCollection';
 
 function HomePage() {
     const [ticker, setTicker] = useState('');
@@ -99,6 +100,9 @@ function HomePage() {
                         <Link to="/challenge" className="px-3 py-1.5 bg-orange-500/10 border border-orange-500/30 rounded-full text-xs font-bold text-orange-400 hover:bg-orange-500/20 transition-all">
                             📅 Daily Challenge
                         </Link>
+                        <Link to="/collection" className="px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/30 rounded-full text-xs font-bold text-cyan-400 hover:bg-cyan-500/20 transition-all">
+                            🎟️ My Tickets
+                        </Link>
                     </div>
                 </header>
 
@@ -168,6 +172,7 @@ function App() {
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/portfolio" element={<PortfolioMode />} />
             <Route path="/challenge" element={<DailyChallenge />} />
+            <Route path="/collection" element={<TicketCollection />} />
         </Routes>
     );
 }
