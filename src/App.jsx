@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route, Link } from 'react-router-dom';
 import { useStockData } from './hooks/useStockData';
 import { useLang } from './i18n/LanguageContext';
 import InputSection from './components/InputSection';
@@ -6,7 +7,13 @@ import RollercoasterChart from './components/RollercoasterChart';
 import ResultCard from './components/ResultCard';
 import { Globe } from 'lucide-react';
 
-function App() {
+// Pages (lazy-loaded via routes)
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import Contact from './pages/Contact';
+import Blog from './pages/Blog';
+
+function HomePage() {
     const [ticker, setTicker] = useState('');
     const [options, setOptions] = useState({ avgPrice: null, quantity: null, comparisonTicker: null });
     const { loading, error, stockData, comparisonData, fetchStockHistory } = useStockData();
@@ -116,13 +123,34 @@ function App() {
                     </div>
                 )}
 
-                {/* Footer */}
-                <footer className="mt-auto py-6 text-center text-slate-700 text-xs">
-                    Built with 🎢 by <span className="text-slate-500 font-bold">Antigravity</span> • {t('footer')}
+                {/* Footer with subtle legal links */}
+                <footer className="mt-auto py-6 text-center text-slate-700 text-xs space-y-2">
+                    <div>
+                        Built with 🎢 by <span className="text-slate-500 font-bold">Antigravity</span> • {t('footer')}
+                    </div>
+                    <div className="flex justify-center gap-3 text-slate-600">
+                        <Link to="/privacy" className="hover:text-slate-400 transition-colors">Privacy Policy</Link>
+                        <span>·</span>
+                        <Link to="/terms" className="hover:text-slate-400 transition-colors">Terms of Service</Link>
+                        <span>·</span>
+                        <Link to="/contact" className="hover:text-slate-400 transition-colors">Contact</Link>
+                    </div>
                 </footer>
             </div>
         </div>
-    )
+    );
 }
 
-export default App
+function App() {
+    return (
+        <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/blog" element={<Blog />} />
+        </Routes>
+    );
+}
+
+export default App;
