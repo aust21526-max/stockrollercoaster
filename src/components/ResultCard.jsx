@@ -77,37 +77,15 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
     const getShareText = () => {
         const emoji = isProfit ? '🚀' : '💀';
         const sign = totalReturn >= 0 ? '+' : '';
-        return `${emoji} ${ticker} 롤러코스터 탑승 완료!\n수익률: ${sign}${totalReturn.toFixed(1)}%\n등급: ${rideGrade.name}\n\n나도 타보기 👉`;
+        const gradeName = t(rideGrade.nameKey) || rideGrade.grade;
+        return `${emoji} I rode the ${ticker} Stock Rollercoaster!\nReturn: ${sign}${totalReturn.toFixed(1)}%\nRide Grade: ${rideGrade.emoji} ${gradeName}\nMDD: -${mddPercent}%\n\nTry yours 🎢👉`;
     };
 
     const getShareUrl = () => {
         return window.location.origin + window.location.pathname;
     };
 
-    const handleShareKakao = () => {
-        if (window.Kakao && window.Kakao.isInitialized()) {
-            window.Kakao.Share.sendDefault({
-                objectType: 'feed',
-                content: {
-                    title: `🎢 ${ticker} 롤러코스터 - ${rideGrade.name}`,
-                    description: `수익률 ${totalReturn >= 0 ? '+' : ''}${totalReturn.toFixed(1)}% | MDD ${mddPercent}% | ${formatDuration(durationDays, t)}`,
-                    imageUrl: 'https://img.icons8.com/color/512/roller-coaster.png',
-                    link: { mobileWebUrl: getShareUrl(), webUrl: getShareUrl() },
-                },
-                buttons: [
-                    { title: '나도 타보기 🎢', link: { mobileWebUrl: getShareUrl(), webUrl: getShareUrl() } },
-                ],
-            });
-        } else {
-            // Fallback: copy text to clipboard
-            const text = getShareText() + ' ' + getShareUrl();
-            navigator.clipboard.writeText(text).then(() => {
-                alert('카카오톡이 연결되지 않아 텍스트가 복사되었습니다. 카톡에 붙여넣기 해주세요!');
-            });
-        }
-    };
-
-    const handleShareX = () => {
+    const handleShareX = async () => {
         const text = getShareText();
         const url = getShareUrl();
         const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
@@ -284,19 +262,11 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
                 </button>
 
                 <button
-                    onClick={handleShareKakao}
-                    className="flex items-center justify-center gap-3 px-8 py-4 bg-[#FEE500] text-[#3C1E1E] rounded-full font-bold text-lg hover:bg-[#F5DC00] transition-all shadow-lg shadow-yellow-500/10 active:scale-95"
-                >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.477 3 2 6.463 2 10.691c0 2.724 1.8 5.109 4.508 6.459l-.96 3.537a.3.3 0 0 0 .457.336L9.93 18.71c.674.1 1.37.154 2.07.154 5.523 0 10-3.463 10-7.873C22 6.463 17.523 3 12 3" /></svg>
-                    카카오톡 공유
-                </button>
-
-                <button
                     onClick={handleShareX}
                     className="flex items-center justify-center gap-3 px-8 py-4 bg-black text-white rounded-full font-bold text-lg hover:bg-zinc-800 transition-all shadow-lg shadow-black/20 border border-zinc-700 active:scale-95"
                 >
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-                    X 공유
+                    Share on X
                 </button>
 
                 <button
