@@ -10,6 +10,7 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
     const cardRef = useRef(null);
     const [capturing, setCapturing] = useState(false);
     const [showBadgeModal, setShowBadgeModal] = useState(false);
+    const [xCopied, setXCopied] = useState(false);
 
     if (!data || data.length === 0) return null;
 
@@ -86,10 +87,36 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
     };
 
     const handleShareX = async () => {
-        const text = getShareText();
-        const url = getShareUrl();
-        const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-        window.open(xUrl, '_blank', 'noopener,noreferrer,width=550,height=420');
+        if (cardRef.current === null) return;
+        setXCopied(false);
+
+        try {
+            // 1. Generate the ticket image
+            const dataUrl = await toPng(cardRef.current, { cacheBust: true, pixelRatio: 2 });
+
+            // 2. Copy image to clipboard
+            const response = await fetch(dataUrl);
+            const blob = await response.blob();
+            await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+            ]);
+
+            setXCopied(true);
+            setTimeout(() => setXCopied(false), 5000);
+
+            // 3. Open X compose window
+            const text = getShareText();
+            const url = getShareUrl();
+            const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+            window.open(xUrl, '_blank', 'noopener,noreferrer,width=550,height=420');
+        } catch (err) {
+            console.error('Failed to copy image for X share:', err);
+            // Fallback: just open X without image
+            const text = getShareText();
+            const url = getShareUrl();
+            const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+            window.open(xUrl, '_blank', 'noopener,noreferrer,width=550,height=420');
+        }
     };
 
     const dateLocale = lang === 'ko' ? 'ko-KR' : 'en-US';
@@ -266,14 +293,17 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
                     className="flex items-center justify-center gap-3 px-8 py-4 bg-black text-white rounded-full font-bold text-lg hover:bg-zinc-800 transition-all shadow-lg shadow-black/20 border border-zinc-700 active:scale-95"
                 >
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-                    Share on X
+                    {xCopied ? '✅ Image copied! Paste in X' : 'Share on X'}
                 </button>
+            </div>
 
+            {/* Secondary Actions */}
+            <div className="flex justify-center gap-3 mt-3">
                 <button
                     onClick={() => setShowBadgeModal(true)}
-                    className="flex items-center justify-center gap-3 px-8 py-4 bg-slate-800 text-slate-300 rounded-full font-bold text-lg hover:bg-slate-700 hover:text-white transition-all border border-slate-700 active:scale-95"
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-800/60 text-slate-400 rounded-full text-xs font-medium hover:bg-slate-700 hover:text-white transition-all border border-slate-700/50"
                 >
-                    <BookOpen className="w-5 h-5" />
+                    <BookOpen className="w-3.5 h-3.5" />
                     {t('badgeCollection')}
                 </button>
             </div>

@@ -43,7 +43,7 @@ const CustomTooltip = ({ active, payload, label, ticker }) => {
                         window.open(`https://www.google.com/search?q=${ticker}+stock+${d.date}&tbm=nws`, '_blank');
                     }}
                 >
-                    <Search className="w-3 h-3" /> {t('whyLabel')} (Google)
+                    <Search className="w-3 h-3" /> 📰 Search News
                 </button>
             </div>
         );
