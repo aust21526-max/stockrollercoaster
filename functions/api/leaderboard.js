@@ -140,7 +140,7 @@ export async function onRequestPost(context) {
         entries.push(newEntry);
 
         const key = getTodayKey();
-        const kv = env.LEADERBOARD || env.KV_BINDING;
+        // kv is already defined above
         await kv.put(key, JSON.stringify(entries), {
             expirationTtl: 86400 * 2,
         });
