@@ -5,76 +5,76 @@ const TermsOfService = () => {
     return (
         <div className="min-h-screen bg-slate-950 text-slate-300 font-sans antialiased">
             <div className="max-w-3xl mx-auto px-6 py-16">
-                <Link to="/" className="text-cyan-400 text-sm hover:underline mb-8 inline-block">&larr; 홈으로 돌아가기</Link>
-                <h1 className="text-3xl font-black text-white mb-2">이용약관</h1>
-                <p className="text-slate-500 text-sm mb-8">Terms of Service · 최종 수정일: 2026년 2월 14일</p>
+                <Link to="/" className="text-cyan-400 text-sm hover:underline mb-8 inline-block">&larr; Back to Home</Link>
+                <h1 className="text-3xl font-black text-white mb-2">Terms of Service</h1>
+                <p className="text-slate-500 text-sm mb-8">Terms of Service · Last Updated: February 14, 2026</p>
 
                 <div className="prose prose-invert prose-sm max-w-none space-y-6 text-slate-400 leading-relaxed">
                     <section>
-                        <h2 className="text-lg font-bold text-white mt-8 mb-3">제1조 (목적)</h2>
-                        <p>본 약관은 Stock Volatility Rollercoaster(이하 "서비스")가 제공하는 주식 변동성 시각화 및 분석 서비스의 이용 조건 및 절차, 이용자와 서비스 간의 권리·의무 및 책임 사항, 기타 필요한 사항을 규정함을 목적으로 합니다.</p>
+                        <h2 className="text-lg font-bold text-white mt-8 mb-3">Article 1 (Purpose)</h2>
+                        <p>These Terms and Conditions aim to regulate the conditions and procedures for using the stock volatility visualization and analysis service provided by Stock Volatility Rollercoaster (hereinafter "Service"), as well as the rights, obligations, and responsibilities of the users and the Service.</p>
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-bold text-white mt-8 mb-3">제2조 (정의)</h2>
+                        <h2 className="text-lg font-bold text-white mt-8 mb-3">Article 2 (Definitions)</h2>
                         <ul className="list-disc pl-6 space-y-1">
-                            <li><strong>"서비스"</strong>란 사용자가 입력한 주식 종목 코드와 날짜를 기반으로 주가 변동성을 롤러코스터 형태로 시각화하고, 관련 분석 결과를 제공하는 웹 애플리케이션을 의미합니다.</li>
-                            <li><strong>"이용자"</strong>란 본 약관에 따라 서비스를 이용하는 모든 자를 의미합니다.</li>
-                            <li><strong>"콘텐츠"</strong>란 서비스 내에서 제공되는 모든 텍스트, 차트, 이미지, 뱃지 등의 정보를 의미합니다.</li>
+                            <li><strong>"Service"</strong> refers to the web application that visualizes stock price volatility in the form of a rollercoaster based on the stock ticker and date entered by the user, and provides related analysis results.</li>
+                            <li><strong>"User"</strong> refers to any person who uses the Service in accordance with these Terms.</li>
+                            <li><strong>"Content"</strong> refers to all information such as text, charts, images, badges, etc., provided within the Service.</li>
                         </ul>
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-bold text-white mt-8 mb-3">제3조 (약관의 효력 및 변경)</h2>
-                        <p>본 약관은 서비스 화면에 게시하거나 기타의 방법으로 이용자에게 공지함으로써 효력이 발생합니다. 서비스는 관련 법령을 위배하지 않는 범위에서 본 약관을 변경할 수 있으며, 변경된 약관은 본 페이지를 통해 공지합니다.</p>
+                        <h2 className="text-lg font-bold text-white mt-8 mb-3">Article 3 (Effect and Change of Terms)</h2>
+                        <p>These Terms become effective by being posted on the service screen or by other means of notification to the user. The Service may change these Terms to the extent that they do not violate relevant laws, and the changed Terms will be announced on this page.</p>
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-bold text-white mt-8 mb-3">제4조 (서비스의 제공)</h2>
-                        <p>서비스는 다음의 기능을 제공합니다:</p>
+                        <h2 className="text-lg font-bold text-white mt-8 mb-3">Article 4 (Provision of Service)</h2>
+                        <p>The Service provides the following features:</p>
                         <ul className="list-disc pl-6 space-y-1">
-                            <li>주식 종목의 과거 주가 데이터를 기반으로 한 변동성 시각화(롤러코스터 차트)</li>
-                            <li>투자 수익률, 생존율, 최대 낙폭(MDD) 등 분석 지표 제공</li>
-                            <li>다른 종목 또는 시장 지수와의 비교 기능</li>
-                            <li>뱃지 시스템을 통한 투자 성과 평가</li>
-                            <li>친구 대결 모드를 통한 수익률 비교</li>
-                            <li>결과 이미지 저장 및 공유 기능</li>
+                            <li>Volatility visualization (rollercoaster chart) based on historical stock price data</li>
+                            <li>Analysis metrics such as return on investment, survival rate, Maximum Drawdown (MDD), etc.</li>
+                            <li>Comparison features with other stocks or market indices</li>
+                            <li>Investment performance evaluation through a badge system</li>
+                            <li>Return rate comparison through Friend Battle Mode</li>
+                            <li>Result image saving and sharing features</li>
                         </ul>
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-bold text-white mt-8 mb-3">제5조 (면책 조항)</h2>
-                        <p>본 서비스에서 제공하는 모든 정보는 오직 <strong>정보 제공 및 엔터테인먼트 목적</strong>으로만 제공됩니다. 본 서비스는 다음 사항에 대해 책임을 지지 않습니다:</p>
+                        <h2 className="text-lg font-bold text-white mt-8 mb-3">Article 5 (Disclaimer)</h2>
+                        <p>All information provided by this Service is for <strong>informational and entertainment purposes only</strong>. The Service is not responsible for:</p>
                         <ul className="list-disc pl-6 space-y-1">
-                            <li>서비스에서 제공하는 정보의 정확성, 완전성 또는 적시성에 대한 보장</li>
-                            <li>서비스 이용으로 인한 직접적, 간접적, 부수적, 결과적 또는 특별한 손해</li>
-                            <li>이용자의 투자 결정으로 인해 발생하는 금전적 손실</li>
-                            <li>제3자 API(주가 데이터 제공자)의 오류 또는 서비스 중단</li>
+                            <li>Grouping the accuracy, completeness, or timeliness of the information provided by the Service</li>
+                            <li>Direct, indirect, incidental, consequential, or special damages resulting from the use of the Service</li>
+                            <li>Financial losses incurred by the user's investment decisions</li>
+                            <li>Errors or service interruptions of third-party APIs (stock price data providers)</li>
                         </ul>
-                        <p className="mt-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-300 text-xs"><strong>⚠️ 투자 권유가 아닙니다:</strong> 본 서비스의 어떠한 내용도 특정 증권의 매수, 매도 또는 보유를 권유하거나 추천하는 것이 아닙니다. 모든 투자 결정은 이용자 본인의 판단과 책임 하에 이루어져야 합니다.</p>
+                        <p className="mt-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-300 text-xs"><strong>⚠️ Not Investment Advice:</strong> Nothing in this Service constitutes a recommendation or solicitation to buy, sell, or hold any specific securities. All investment decisions are the sole responsibility of the user.</p>
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-bold text-white mt-8 mb-3">제6조 (지적 재산권)</h2>
-                        <p>서비스에서 제공하는 콘텐츠(차트, 뱃지, 디자인, 텍스트 등)의 지적 재산권은 서비스 제공자에게 있습니다. 이용자는 서비스가 제공하는 공유 기능을 통해 개인적 용도로 결과물을 공유할 수 있으나, 상업적 목적으로 무단 복제·배포하는 것은 금지됩니다.</p>
+                        <h2 className="text-lg font-bold text-white mt-8 mb-3">Article 6 (Intellectual Property Rights)</h2>
+                        <p>The intellectual property rights of the content (charts, badges, designs, text, etc.) provided by the Service belong to the Service provider. Users may share results for personal use through the sharing features provided by the Service, but unauthorized reproduction or distribution for commercial purposes is prohibited.</p>
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-bold text-white mt-8 mb-3">제7조 (이용자의 의무)</h2>
+                        <h2 className="text-lg font-bold text-white mt-8 mb-3">Article 7 (User Obligations)</h2>
                         <ul className="list-disc pl-6 space-y-1">
-                            <li>이용자는 서비스를 이용함에 있어 관련 법령 및 본 약관의 규정을 준수해야 합니다.</li>
-                            <li>서비스의 정상적인 운영을 방해하는 행위(과도한 API 호출, 크롤링, 해킹 시도 등)를 해서는 안 됩니다.</li>
-                            <li>타인의 개인정보를 침해하거나 명예를 훼손하는 행위를 해서는 안 됩니다.</li>
+                            <li>Users must comply with relevant laws and the provisions of these Terms when using the Service.</li>
+                            <li>Users must not engage in acts that interfere with the normal operation of the Service (excessive API calls, crawling, hacking attempts, etc.).</li>
+                            <li>Users must not infringe on the personal information of others or defame others.</li>
                         </ul>
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-bold text-white mt-8 mb-3">제8조 (준거법 및 관할)</h2>
-                        <p>본 약관의 해석 및 적용에 있어서는 대한민국 법률을 따르며, 서비스 이용과 관련한 분쟁에 대해서는 관할 법원에 소를 제기합니다.</p>
+                        <h2 className="text-lg font-bold text-white mt-8 mb-3">Article 8 (Governing Law and Jurisdiction)</h2>
+                        <p>The interpretation and application of these Terms shall be governed by the laws of the Republic of Korea, and conflicting disputes related to the use of the Service shall be subject to the jurisdiction of the competent court.</p>
                     </section>
 
                     <section>
-                        <p className="mt-6 text-slate-500 text-xs">본 약관은 2026년 2월 14일부터 시행됩니다.</p>
+                        <p className="mt-6 text-slate-500 text-xs">These Terms are effective from February 14, 2026.</p>
                     </section>
                 </div>
 

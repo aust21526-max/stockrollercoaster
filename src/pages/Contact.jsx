@@ -5,50 +5,50 @@ const Contact = () => {
     return (
         <div className="min-h-screen bg-slate-950 text-slate-300 font-sans antialiased">
             <div className="max-w-3xl mx-auto px-6 py-16">
-                <Link to="/" className="text-cyan-400 text-sm hover:underline mb-8 inline-block">&larr; 홈으로 돌아가기</Link>
-                <h1 className="text-3xl font-black text-white mb-2">문의하기</h1>
-                <p className="text-slate-500 text-sm mb-8">Contact Us · 피드백, 제안, 문의사항을 보내주세요.</p>
+                <Link to="/" className="text-cyan-400 text-sm hover:underline mb-8 inline-block">&larr; Back to Home</Link>
+                <h1 className="text-3xl font-black text-white mb-2">Contact Us</h1>
+                <p className="text-slate-500 text-sm mb-8">Contact Us · Send us your feedback, suggestions, or inquiries.</p>
 
                 <div className="prose prose-invert prose-sm max-w-none space-y-6 text-slate-400 leading-relaxed">
                     <section>
-                        <h2 className="text-lg font-bold text-white mt-8 mb-3">📧 이메일 문의</h2>
-                        <p>서비스 이용, 기능 제안, 버그 리포트, 광고 문의 등 모든 종류의 문의는 아래 이메일로 보내주시기 바랍니다.</p>
+                        <h2 className="text-lg font-bold text-white mt-8 mb-3">📧 Email Inquiries</h2>
+                        <p>For service usage, feature suggestions, bug reports, and advertising inquiries, please contact us at the email below.</p>
                         <div className="mt-3 p-4 bg-slate-900/50 border border-slate-700/50 rounded-xl">
-                            <p className="text-white font-mono font-bold text-lg">contact@stock-rollercoaster.com</p>
+                            <p className="text-white font-mono font-bold text-lg">aust21526@gmail.com</p>
                         </div>
-                        <p className="mt-3 text-xs text-slate-500">영업일 기준 1~3일 이내에 답변 드리겠습니다.</p>
+                        <p className="mt-3 text-xs text-slate-500">We will respond within 1-3 business days.</p>
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-bold text-white mt-8 mb-3">💡 피드백 및 기능 제안</h2>
-                        <p>Stock Volatility Rollercoaster를 더 좋은 서비스로 만들기 위한 아이디어가 있으시다면 언제든지 환영합니다. 다음과 같은 피드백을 기다리고 있습니다:</p>
+                        <h2 className="text-lg font-bold text-white mt-8 mb-3">💡 Feedback & Suggestions</h2>
+                        <p>We welcome any ideas to make Stock Volatility Rollercoaster a better service. We are looking forward to your feedback on:</p>
                         <ul className="list-disc pl-6 space-y-1">
-                            <li>새로운 기능 아이디어 (예: 새로운 뱃지, 분석 지표 등)</li>
-                            <li>UI/UX 개선 제안</li>
-                            <li>데이터 관련 요청 (새로운 시장, 지수 추가 등)</li>
-                            <li>일반적인 사용 후기</li>
+                            <li>New feature ideas (e.g., new badges, analysis metrics)</li>
+                            <li>UI/UX improvement suggestions</li>
+                            <li>Data-related requests (new markets, indices, etc.)</li>
+                            <li>General user reviews</li>
                         </ul>
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-bold text-white mt-8 mb-3">🐛 버그 리포트</h2>
-                        <p>서비스 이용 중 문제를 발견하셨다면, 다음 정보를 포함하여 이메일로 보내주시면 빠르게 해결하겠습니다:</p>
+                        <h2 className="text-lg font-bold text-white mt-8 mb-3">🐛 Bug Reports</h2>
+                        <p>If you encounter any issues while using the service, please send us an email with the following information for a faster resolution:</p>
                         <ul className="list-disc pl-6 space-y-1">
-                            <li>사용 중인 브라우저 및 운영체제</li>
-                            <li>문제가 발생한 종목 코드 및 날짜</li>
-                            <li>에러 메시지 캡처 (있는 경우)</li>
-                            <li>문제 재현 절차</li>
+                            <li>Browser and Operating System used</li>
+                            <li>Stock ticker and date where the issue occurred</li>
+                            <li>Screenshot of the error message (if available)</li>
+                            <li>Steps to reproduce the issue</li>
                         </ul>
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-bold text-white mt-8 mb-3">📢 광고 및 비즈니스 문의</h2>
-                        <p>광고 게재, 제휴, 협업 등 비즈니스 관련 문의는 이메일 제목에 <strong>[비즈니스]</strong>를 포함하여 보내주시기 바랍니다.</p>
+                        <h2 className="text-lg font-bold text-white mt-8 mb-3">📢 Business & Advertising</h2>
+                        <p>For advertising, partnerships, and collaboration inquiries, please include <strong>[Business]</strong> in the email subject line.</p>
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-bold text-white mt-8 mb-3">⚖️ 법적 문의</h2>
-                        <p>저작권, 개인정보보호 등 법적 사안과 관련된 문의는 이메일 제목에 <strong>[법적 문의]</strong>를 포함하여 보내주시기 바랍니다. 관련 문서를 첨부해 주시면 보다 신속하게 처리해 드리겠습니다.</p>
+                        <h2 className="text-lg font-bold text-white mt-8 mb-3">⚖️ Legal Inquiries</h2>
+                        <p>For inquiries related to copyright, privacy, and other legal matters, please include <strong>[Legal]</strong> in the email subject line. Attaching relevant documents will help us process your request more quickly.</p>
                     </section>
                 </div>
 
