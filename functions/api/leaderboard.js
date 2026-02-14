@@ -25,8 +25,9 @@ function getTodayKey() {
 }
 
 async function getOrInitLeaderboard(env) {
+    const kv = env.LEADERBOARD || env.KV_BINDING;
     const key = getTodayKey();
-    const raw = await env.LEADERBOARD.get(key);
+    const raw = await kv.get(key);
 
     if (raw) {
         return JSON.parse(raw);
@@ -39,7 +40,7 @@ async function getOrInitLeaderboard(env) {
         timestamp: Date.now() - (i * 60000), // Stagger timestamps
     }));
 
-    await env.LEADERBOARD.put(key, JSON.stringify(seeded), {
+    await kv.put(key, JSON.stringify(seeded), {
         expirationTtl: 86400 * 2, // Auto-expire after 2 days
     });
 
@@ -50,8 +51,9 @@ export async function onRequestGet(context) {
     const { env } = context;
 
     try {
-        if (!env.LEADERBOARD) {
-            throw new Error('KV namespace "LEADERBOARD" is not bound. Check Cloudflare Dashboard > Settings > Functions > KV Namespace Bindings.');
+        const kv = env.LEADERBOARD || env.KV_BINDING;
+        if (!kv) {
+            throw new Error('KV namespace is not bound. Please bind "LEADERBOARD" or "KV_BINDING" in Cloudflare Dashboard > Settings > Functions.');
         }
 
         const entries = await getOrInitLeaderboard(env);
@@ -93,8 +95,9 @@ export async function onRequestPost(context) {
     const { env, request } = context;
 
     try {
-        if (!env.LEADERBOARD) {
-            throw new Error('KV namespace "LEADERBOARD" is not bound.');
+        const kv = env.LEADERBOARD || env.KV_BINDING;
+        if (!kv) {
+            throw new Error('KV namespace is not bound.');
         }
 
         const body = await request.json();
@@ -137,7 +140,8 @@ export async function onRequestPost(context) {
         entries.push(newEntry);
 
         const key = getTodayKey();
-        await env.LEADERBOARD.put(key, JSON.stringify(entries), {
+        const kv = env.LEADERBOARD || env.KV_BINDING;
+        await kv.put(key, JSON.stringify(entries), {
             expirationTtl: 86400 * 2,
         });
 
