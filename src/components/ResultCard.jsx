@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { toPng } from 'html-to-image';
 import { Share2, Download, TrendingDown, Clock, Award, Flame, Zap, BookOpen, Copy, Swords, Trophy } from 'lucide-react';
 import { calculateMaxDrawdown, getRideGrade, formatDuration, getFactBomb, detectEvents, calculateSurvivalRate, getBadges, ALL_BADGES } from '../utils/analysis';
