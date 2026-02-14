@@ -1,6 +1,6 @@
 import React, { useRef, useState, useMemo } from 'react';
 import { toPng } from 'html-to-image';
-import { Share2, Download, TrendingDown, Clock, Award, Flame, Zap, BookOpen, Copy, Swords } from 'lucide-react';
+import { Share2, Download, TrendingDown, Clock, Award, Flame, Zap, BookOpen, Copy, Swords, Trophy } from 'lucide-react';
 import { calculateMaxDrawdown, getRideGrade, formatDuration, getFactBomb, detectEvents, calculateSurvivalRate, getBadges, ALL_BADGES } from '../utils/analysis';
 import { useLang } from '../i18n/LanguageContext';
 import BadgeModal from './BadgeModal';
@@ -11,6 +11,7 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
     const [capturing, setCapturing] = useState(false);
     const [showBadgeModal, setShowBadgeModal] = useState(false);
     const [xCopied, setXCopied] = useState(false);
+    const [leaderboardStatus, setLeaderboardStatus] = useState(null); // null | 'submitting' | 'success' | 'error'
 
     if (!data || data.length === 0) return null;
 
@@ -298,13 +299,55 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
             </div>
 
             {/* Secondary Actions */}
-            <div className="flex justify-center gap-3 mt-3">
+            <div className="flex justify-center gap-3 mt-3 flex-wrap">
                 <button
                     onClick={() => setShowBadgeModal(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-slate-800/60 text-slate-400 rounded-full text-xs font-medium hover:bg-slate-700 hover:text-white transition-all border border-slate-700/50"
                 >
                     <BookOpen className="w-3.5 h-3.5" />
                     {t('badgeCollection')}
+                </button>
+
+                <button
+                    onClick={async () => {
+                        if (leaderboardStatus === 'success') return;
+                        const nickname = prompt('Enter your rider name for the leaderboard:', 'Anonymous Rider');
+                        if (!nickname) return;
+                        setLeaderboardStatus('submitting');
+                        try {
+                            const res = await fetch('/api/leaderboard', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    nickname,
+                                    ticker,
+                                    returnPct: parseFloat(totalReturn.toFixed(1)),
+                                    mdd: parseFloat(mddPercent),
+                                    grade: rideGrade.grade,
+                                    emoji: rideGrade.emoji,
+                                    startDate: data[0].date,
+                                }),
+                            });
+                            if (!res.ok) throw new Error('Failed');
+                            setLeaderboardStatus('success');
+                        } catch {
+                            setLeaderboardStatus('error');
+                            setTimeout(() => setLeaderboardStatus(null), 3000);
+                        }
+                    }}
+                    disabled={leaderboardStatus === 'submitting'}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium transition-all border ${leaderboardStatus === 'success'
+                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50'
+                            : leaderboardStatus === 'error'
+                                ? 'bg-rose-500/20 text-rose-400 border-rose-500/50'
+                                : 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
+                        }`}
+                >
+                    <Trophy className="w-3.5 h-3.5" />
+                    {leaderboardStatus === 'submitting' ? 'Submitting...' :
+                        leaderboardStatus === 'success' ? '✅ Submitted!' :
+                            leaderboardStatus === 'error' ? '❌ Failed' :
+                                '🏆 Join Leaderboard'}
                 </button>
             </div>
 

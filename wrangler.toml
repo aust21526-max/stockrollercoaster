@@ -1,0 +1,7 @@
+# Cloudflare Pages + KV binding
+# After creating a KV namespace in the Cloudflare dashboard,
+# replace <YOUR_KV_NAMESPACE_ID> with the actual ID.
+
+[[kv_namespaces]]
+binding = "LEADERBOARD"
+id = "<YOUR_KV_NAMESPACE_ID>"

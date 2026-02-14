@@ -7,11 +7,14 @@ import RollercoasterChart from './components/RollercoasterChart';
 import ResultCard from './components/ResultCard';
 import { Globe } from 'lucide-react';
 
-// Pages (lazy-loaded via routes)
+// Pages
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import Contact from './pages/Contact';
 import Blog from './pages/Blog';
+import Leaderboard from './components/Leaderboard';
+import PortfolioMode from './components/PortfolioMode';
+import DailyChallenge from './components/DailyChallenge';
 
 function HomePage() {
     const [ticker, setTicker] = useState('');
@@ -84,6 +87,19 @@ function HomePage() {
                         <br />
                         <span className="text-slate-400 font-semibold">{t('headerDesc2')}</span>
                     </p>
+
+                    {/* Quick Nav Links */}
+                    <div className="flex justify-center gap-3 mt-4">
+                        <Link to="/leaderboard" className="px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-full text-xs font-bold text-amber-400 hover:bg-amber-500/20 transition-all">
+                            🏆 Leaderboard
+                        </Link>
+                        <Link to="/portfolio" className="px-3 py-1.5 bg-violet-500/10 border border-violet-500/30 rounded-full text-xs font-bold text-violet-400 hover:bg-violet-500/20 transition-all">
+                            📊 Portfolio
+                        </Link>
+                        <Link to="/challenge" className="px-3 py-1.5 bg-orange-500/10 border border-orange-500/30 rounded-full text-xs font-bold text-orange-400 hover:bg-orange-500/20 transition-all">
+                            📅 Daily Challenge
+                        </Link>
+                    </div>
                 </header>
 
                 {/* Dynamic Content */}
@@ -149,6 +165,9 @@ function App() {
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/blog" element={<Blog />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/portfolio" element={<PortfolioMode />} />
+            <Route path="/challenge" element={<DailyChallenge />} />
         </Routes>
     );
 }

@@ -166,14 +166,9 @@ export const POPULAR_TICKERS = [
     { ticker: 'MSFT', name: 'MS', emoji: '🪟' },
 ];
 
-// 바이럴 뱃지 계산 (Expanded)
+// 바이럴 뱃지 계산 (Expanded - 21 badges)
 export function getBadges(totalReturn, maxDrawdown, durationDays) {
     const badges = [];
-
-    // All Possible Badges Definition for Dictionary
-    // We will check conditions and push earned ones. 
-    // Usually we might want to return { earned: [], unearned: [] } but for now let's just return earned.
-    // ResultCard will use a separate list for the Dictionary if needed, or we export a constant `ALL_BADGES`.
 
     // 1. 🖨️ Money Printer (돈복사기): +100%
     if (totalReturn >= 100) {
@@ -185,17 +180,17 @@ export function getBadges(totalReturn, maxDrawdown, durationDays) {
         badges.push({ id: 'diamondHands', emoji: '💎', nameKey: 'badgeDiamondHands', color: 'text-cyan-300', msgKey: 'badgeDiamondHandsMsg' });
     }
 
-    // 3. 🧘 God of HODL (존버의 신): > 365 days & Profit (Existing)
+    // 3. 🧘 God of HODL (존버의 신): > 365 days & Profit
     if (durationDays >= 365 && totalReturn > 0) {
         badges.push({ id: 'hodlGod', emoji: '🧘', nameKey: 'badgeHodlGod', color: 'text-purple-400', msgKey: 'badgeHodlGodMsg' });
     }
 
-    // 4. 🧘 Nirvana (해탈): > 365 days & Loss -50%
+    // 4. 🧘‍♂️ Nirvana (해탈): > 365 days & Loss -50%
     if (durationDays >= 365 && totalReturn <= -50) {
         badges.push({ id: 'nirvana', emoji: '🧘‍♂️', nameKey: 'badgeNirvana', color: 'text-slate-400', msgKey: 'badgeNirvanaMsg' });
     }
 
-    // 5. 💰 Profit Master (익절 장인): > 20% (Existing)
+    // 5. 💰 Profit Master (익절 장인): > 20%
     if (totalReturn >= 20) {
         badges.push({ id: 'profitMaster', emoji: '💰', nameKey: 'badgeProfitMaster', color: 'text-emerald-400', msgKey: 'badgeProfitMasterMsg' });
     }
@@ -205,7 +200,7 @@ export function getBadges(totalReturn, maxDrawdown, durationDays) {
         badges.push({ id: 'luckyShot', emoji: '🐣', nameKey: 'badgeLuckyShot', color: 'text-yellow-300', msgKey: 'badgeLuckyShotMsg' });
     }
 
-    // 7. 🦁 Beast Heart (야수의 심장): MDD > 50% (Existing)
+    // 7. 🦁 Beast Heart (야수의 심장): MDD > 50%
     if (maxDrawdown >= 0.5) {
         badges.push({ id: 'beastHeart', emoji: '🦁', nameKey: 'badgeBeastHeart', color: 'text-rose-500', msgKey: 'badgeBeastHeartMsg' });
     }
@@ -215,9 +210,69 @@ export function getBadges(totalReturn, maxDrawdown, durationDays) {
         badges.push({ id: 'ambulance', emoji: '🚑', nameKey: 'badgeAmbulance', color: 'text-red-500', msgKey: 'badgeAmbulanceMsg' });
     }
 
-    // 9. 🏝️ Survivor (생존자): MDD > 30% & Profit (Existing)
+    // 9. 🏝️ Survivor (생존자): MDD > 30% & Profit
     if (maxDrawdown >= 0.3 && totalReturn > 0) {
         badges.push({ id: 'survivor', emoji: '🏝️', nameKey: 'badgeSurvivor', color: 'text-cyan-400', msgKey: 'badgeSurvivorMsg' });
+    }
+
+    // 10. 🧻 Paper Hands: < 7 days & loss
+    if (durationDays < 7 && totalReturn < 0) {
+        badges.push({ id: 'paperHands', emoji: '🧻', nameKey: 'badgePaperHands', color: 'text-amber-300', msgKey: 'badgePaperHandsMsg' });
+    }
+
+    // 11. 🎰 YOLO King: MDD > 60% & profit > 50%
+    if (maxDrawdown >= 0.6 && totalReturn >= 50) {
+        badges.push({ id: 'yoloKing', emoji: '🎰', nameKey: 'badgeYoloKing', color: 'text-pink-400', msgKey: 'badgeYoloKingMsg' });
+    }
+
+    // 12. 🏄 Sideways Surfer: ±3% after 90+ days
+    if (durationDays >= 90 && Math.abs(totalReturn) <= 3) {
+        badges.push({ id: 'sidewaysSurfer', emoji: '🏄', nameKey: 'badgeSidewaysSurfer', color: 'text-sky-400', msgKey: 'badgeSidewaysSurferMsg' });
+    }
+
+    // 13. 🚀 Rocket Man: return > 200%
+    if (totalReturn >= 200) {
+        badges.push({ id: 'rocketMan', emoji: '🚀', nameKey: 'badgeRocketMan', color: 'text-violet-400', msgKey: 'badgeRocketManMsg' });
+    }
+
+    // 14. 🏊 Buy the Dip Champion: MDD > 30% then recovery > 50%
+    if (maxDrawdown >= 0.3 && totalReturn >= 50) {
+        badges.push({ id: 'buyTheDip', emoji: '🏊', nameKey: 'badgeBuyTheDip', color: 'text-blue-400', msgKey: 'badgeBuyTheDipMsg' });
+    }
+
+    // 15. ⚡ Speed Runner: < 14 days & > 30%
+    if (durationDays < 14 && totalReturn >= 30) {
+        badges.push({ id: 'speedRunner', emoji: '⚡', nameKey: 'badgeSpeedRunner', color: 'text-yellow-400', msgKey: 'badgeSpeedRunnerMsg' });
+    }
+
+    // 16. 🧊 Frozen Account: > 1000 days
+    if (durationDays >= 1000) {
+        badges.push({ id: 'frozenAccount', emoji: '🧊', nameKey: 'badgeFrozenAccount', color: 'text-blue-200', msgKey: 'badgeFrozenAccountMsg' });
+    }
+
+    // 17. 😢 Emotional Damage: MDD > 40% & loss
+    if (maxDrawdown >= 0.4 && totalReturn < 0) {
+        badges.push({ id: 'emotionalDamage', emoji: '😢', nameKey: 'badgeEmotionalDamage', color: 'text-indigo-400', msgKey: 'badgeEmotionalDamageMsg' });
+    }
+
+    // 18. 🎖️ War Veteran: > 730 days & profit
+    if (durationDays >= 730 && totalReturn > 0) {
+        badges.push({ id: 'warVeteran', emoji: '🎖️', nameKey: 'badgeWarVeteran', color: 'text-amber-500', msgKey: 'badgeWarVeteranMsg' });
+    }
+
+    // 19. 🪙 Penny Wise: return 0~1%
+    if (totalReturn >= 0 && totalReturn <= 1) {
+        badges.push({ id: 'pennyWise', emoji: '🪙', nameKey: 'badgePennyWise', color: 'text-stone-400', msgKey: 'badgePennyWiseMsg' });
+    }
+
+    // 20. 🪂 Free Fall: loss > 90%
+    if (totalReturn <= -90) {
+        badges.push({ id: 'freeFall', emoji: '🪂', nameKey: 'badgeFreeFall', color: 'text-red-600', msgKey: 'badgeFreeFallMsg' });
+    }
+
+    // 21. 🔥 Phoenix: MDD > 50% & return > 20%
+    if (maxDrawdown >= 0.5 && totalReturn >= 20) {
+        badges.push({ id: 'phoenix', emoji: '🔥', nameKey: 'badgePhoenix', color: 'text-orange-400', msgKey: 'badgePhoenixMsg' });
     }
 
     return badges;
@@ -234,4 +289,16 @@ export const ALL_BADGES = [
     { id: 'beastHeart', emoji: '🦁', nameKey: 'badgeBeastHeart', color: 'text-rose-500', msgKey: 'badgeBeastHeartMsg' },
     { id: 'ambulance', emoji: '🚑', nameKey: 'badgeAmbulance', color: 'text-red-500', msgKey: 'badgeAmbulanceMsg' },
     { id: 'survivor', emoji: '🏝️', nameKey: 'badgeSurvivor', color: 'text-cyan-400', msgKey: 'badgeSurvivorMsg' },
+    { id: 'paperHands', emoji: '🧻', nameKey: 'badgePaperHands', color: 'text-amber-300', msgKey: 'badgePaperHandsMsg' },
+    { id: 'yoloKing', emoji: '🎰', nameKey: 'badgeYoloKing', color: 'text-pink-400', msgKey: 'badgeYoloKingMsg' },
+    { id: 'sidewaysSurfer', emoji: '🏄', nameKey: 'badgeSidewaysSurfer', color: 'text-sky-400', msgKey: 'badgeSidewaysSurferMsg' },
+    { id: 'rocketMan', emoji: '🚀', nameKey: 'badgeRocketMan', color: 'text-violet-400', msgKey: 'badgeRocketManMsg' },
+    { id: 'buyTheDip', emoji: '🏊', nameKey: 'badgeBuyTheDip', color: 'text-blue-400', msgKey: 'badgeBuyTheDipMsg' },
+    { id: 'speedRunner', emoji: '⚡', nameKey: 'badgeSpeedRunner', color: 'text-yellow-400', msgKey: 'badgeSpeedRunnerMsg' },
+    { id: 'frozenAccount', emoji: '🧊', nameKey: 'badgeFrozenAccount', color: 'text-blue-200', msgKey: 'badgeFrozenAccountMsg' },
+    { id: 'emotionalDamage', emoji: '😢', nameKey: 'badgeEmotionalDamage', color: 'text-indigo-400', msgKey: 'badgeEmotionalDamageMsg' },
+    { id: 'warVeteran', emoji: '🎖️', nameKey: 'badgeWarVeteran', color: 'text-amber-500', msgKey: 'badgeWarVeteranMsg' },
+    { id: 'pennyWise', emoji: '🪙', nameKey: 'badgePennyWise', color: 'text-stone-400', msgKey: 'badgePennyWiseMsg' },
+    { id: 'freeFall', emoji: '🪂', nameKey: 'badgeFreeFall', color: 'text-red-600', msgKey: 'badgeFreeFallMsg' },
+    { id: 'phoenix', emoji: '🔥', nameKey: 'badgePhoenix', color: 'text-orange-400', msgKey: 'badgePhoenixMsg' },
 ];
