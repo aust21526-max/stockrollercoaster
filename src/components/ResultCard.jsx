@@ -4,6 +4,7 @@ import { Share2, Download, TrendingDown, Clock, Award, Flame, Zap, BookOpen, Cop
 import { calculateMaxDrawdown, getRideGrade, formatDuration, getFactBomb, detectEvents, calculateSurvivalRate, getBadges, ALL_BADGES } from '../utils/analysis';
 import { useLang } from '../i18n/LanguageContext';
 import BadgeModal from './BadgeModal';
+import NicknameModal from './NicknameModal';
 
 const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTicker, comparisonData, battleInfo }) => {
     const { lang, t } = useLang();
@@ -11,7 +12,9 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
     const [capturing, setCapturing] = useState(false);
     const [showBadgeModal, setShowBadgeModal] = useState(false);
     const [xCopied, setXCopied] = useState(false);
-    const [leaderboardStatus, setLeaderboardStatus] = useState(null); // null | 'submitting' | 'success' | 'error'
+    const [leaderboardStatus, setLeaderboardStatus] = useState(null);
+    const [showNicknameModal, setShowNicknameModal] = useState(false);
+    const [nicknameMode, setNicknameMode] = useState('leaderboard'); // 'leaderboard' | 'challenge'
 
     if (!data || data.length === 0) return null;
 
@@ -64,16 +67,42 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
     };
 
     const handleChallengeFriend = () => {
+        setNicknameMode('challenge');
+        setShowNicknameModal(true);
+    };
+
+    const handleChallengeSubmit = (name) => {
         const url = new URL(window.location.href);
         const baseUrl = url.origin + url.pathname;
-        const name = prompt('Name for the challenge card:', 'Unknown Investor');
-        if (!name) return;
-
         const battleUrl = `${baseUrl}?c_name=${encodeURIComponent(name)}&c_ticker=${ticker}&c_return=${totalReturn.toFixed(2)}`;
         navigator.clipboard.writeText(battleUrl).then(() => {
             setChallengeCopied(true);
             setTimeout(() => setChallengeCopied(false), 2000);
         });
+    };
+
+    const handleLeaderboardSubmit = async (nickname) => {
+        setLeaderboardStatus('submitting');
+        try {
+            const res = await fetch('/api/leaderboard', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nickname,
+                    ticker,
+                    returnPct: parseFloat(totalReturn.toFixed(1)),
+                    mdd: parseFloat(mddPercent),
+                    grade: rideGrade.grade,
+                    emoji: rideGrade.emoji,
+                    startDate: data[0].date,
+                }),
+            });
+            if (!res.ok) throw new Error('Failed');
+            setLeaderboardStatus('success');
+        } catch {
+            setLeaderboardStatus('error');
+            setTimeout(() => setLeaderboardStatus(null), 3000);
+        }
     };
 
     const getShareText = () => {
@@ -309,38 +338,17 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
                 </button>
 
                 <button
-                    onClick={async () => {
+                    onClick={() => {
                         if (leaderboardStatus === 'success') return;
-                        const nickname = prompt('Enter your rider name for the leaderboard:', 'Anonymous Rider');
-                        if (!nickname) return;
-                        setLeaderboardStatus('submitting');
-                        try {
-                            const res = await fetch('/api/leaderboard', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    nickname,
-                                    ticker,
-                                    returnPct: parseFloat(totalReturn.toFixed(1)),
-                                    mdd: parseFloat(mddPercent),
-                                    grade: rideGrade.grade,
-                                    emoji: rideGrade.emoji,
-                                    startDate: data[0].date,
-                                }),
-                            });
-                            if (!res.ok) throw new Error('Failed');
-                            setLeaderboardStatus('success');
-                        } catch {
-                            setLeaderboardStatus('error');
-                            setTimeout(() => setLeaderboardStatus(null), 3000);
-                        }
+                        setNicknameMode('leaderboard');
+                        setShowNicknameModal(true);
                     }}
                     disabled={leaderboardStatus === 'submitting'}
                     className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium transition-all border ${leaderboardStatus === 'success'
-                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50'
-                            : leaderboardStatus === 'error'
-                                ? 'bg-rose-500/20 text-rose-400 border-rose-500/50'
-                                : 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50'
+                        : leaderboardStatus === 'error'
+                            ? 'bg-rose-500/20 text-rose-400 border-rose-500/50'
+                            : 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
                         }`}
                 >
                     <Trophy className="w-3.5 h-3.5" />
@@ -357,6 +365,20 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
                 onClose={() => setShowBadgeModal(false)}
                 earnedBadges={badges}
                 allBadges={ALL_BADGES}
+            />
+
+            {/* Nickname Modal */}
+            <NicknameModal
+                isOpen={showNicknameModal}
+                onClose={() => setShowNicknameModal(false)}
+                mode={nicknameMode}
+                onSubmit={(name) => {
+                    if (nicknameMode === 'challenge') {
+                        handleChallengeSubmit(name);
+                    } else {
+                        handleLeaderboardSubmit(name);
+                    }
+                }}
             />
         </div>
     );

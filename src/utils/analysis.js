@@ -2,37 +2,74 @@
  * 주가 데이터 분석 유틸리티
  */
 
-// 롤러코스터 난이도 등급 시스템
-// 롤러코스터 난이도 등급 시스템 (Complex Logic)
+// 롤러코스터 난이도 등급 시스템 (Expanded - 20+ grades)
 export function getRideGrade(maxDrawdown, totalReturn) {
-    const mdd = maxDrawdown; // 0.0 ~ 1.0 (positive value representing drop)
+    const mdd = maxDrawdown; // 0.0 ~ 1.0
     const ret = totalReturn; // percentage
 
-    // 1. 🚀 Rocket to Heaven (천국행 로켓)
+    // === LEGENDARY TIER ===
+    // 🚀 Rocket to Heaven: +200%+
     if (ret >= 200) return { grade: 'GOD', nameKey: 'gradeRocket', descKey: 'gradeRocketDesc', emoji: '🚀', color: 'text-purple-400', bgColor: 'bg-purple-500/20', borderColor: 'border-purple-500/50' };
 
-    // 2. 🍂 Bungee Jumping (줄 없는 번지점프) - Worst Case
+    // 🦄 Unicorn Express: +100%+ with low MDD (<20%)
+    if (ret >= 100 && mdd < 0.20) return { grade: 'SSS', nameKey: 'gradeUnicorn', descKey: 'gradeUnicornDesc', emoji: '🦄', color: 'text-fuchsia-400', bgColor: 'bg-fuchsia-500/20', borderColor: 'border-fuchsia-500/50' };
+
+    // 💎 Diamond Coaster: +100%+ with high MDD (40%+)
+    if (ret >= 100 && mdd >= 0.40) return { grade: 'SS', nameKey: 'gradeDiamondCoaster', descKey: 'gradeDiamondCoasterDesc', emoji: '💎', color: 'text-cyan-300', bgColor: 'bg-cyan-500/20', borderColor: 'border-cyan-500/50' };
+
+    // === EXTREME TIER ===
+    // 🍂 Bungee Jumping: MDD 70%+
     if (mdd >= 0.70) return { grade: 'F', nameKey: 'gradeBungee', descKey: 'gradeBungeeDesc', emoji: '🍂', color: 'text-slate-500', bgColor: 'bg-slate-700/20', borderColor: 'border-slate-500/50' };
 
-    // 3. 🔥 Hell Train (지옥행 급행열차)
+    // 🧟 Zombie Apocalypse: MDD 60%+ and loss 50%+
+    if (mdd >= 0.60 && ret <= -50) return { grade: 'F+', nameKey: 'gradeZombie', descKey: 'gradeZombieDesc', emoji: '🧟', color: 'text-lime-600', bgColor: 'bg-lime-600/20', borderColor: 'border-lime-600/50' };
+
+    // 🔥 Hell Train: MDD 50%+ and loss 30%+
     if (mdd >= 0.50 && ret <= -30) return { grade: 'D-', nameKey: 'gradeHellTrain', descKey: 'gradeHellTrainDesc', emoji: '🔥', color: 'text-red-600', bgColor: 'bg-red-600/20', borderColor: 'border-red-600/50' };
 
-    // 4. 🐲 T-Express (T-익스프레스)
+    // 🐲 T-Express: MDD 40%+ and profit
     if (mdd >= 0.40 && ret > 0) return { grade: 'S', nameKey: 'gradeTExpress', descKey: 'gradeTExpressDesc', emoji: '🎢', color: 'text-rose-400', bgColor: 'bg-rose-400/20', borderColor: 'border-rose-400/50' };
 
-    // 5. 💸 Wall St Donor (월가 기부천사)
+    // 🏴‍☠️ Pirate Ship: MDD 40%+ and loss 10~30%
+    if (mdd >= 0.40 && ret <= -10 && ret > -30) return { grade: 'D', nameKey: 'gradePirateShip', descKey: 'gradePirateShipDesc', emoji: '🏴‍☠️', color: 'text-amber-600', bgColor: 'bg-amber-600/20', borderColor: 'border-amber-600/50' };
+
+    // 👻 Ghost Ship: MDD 30~40% and loss
+    if (mdd >= 0.30 && mdd < 0.40 && ret < 0) return { grade: 'D+', nameKey: 'gradeGhostShip', descKey: 'gradeGhostShipDesc', emoji: '👻', color: 'text-violet-400', bgColor: 'bg-violet-400/20', borderColor: 'border-violet-400/50' };
+
+    // 🦸 Superman: +50%+ with MDD < 30%
+    if (ret >= 50 && mdd < 0.30) return { grade: 'S+', nameKey: 'gradeSuperman', descKey: 'gradeSupermanDesc', emoji: '🦸', color: 'text-blue-400', bgColor: 'bg-blue-400/20', borderColor: 'border-blue-400/50' };
+
+    // === HIGH TIER ===
+    // 💸 Wall St Donor: loss 10~30% with low MDD
     if (ret < -10 && ret >= -30 && mdd < 0.4) return { grade: 'C', nameKey: 'gradeDonor', descKey: 'gradeDonorDesc', emoji: '💸', color: 'text-blue-400', bgColor: 'bg-blue-400/20', borderColor: 'border-blue-400/50' };
 
-    // 6. 🎠 Merry-Go-Round (회전목마)
+    // 🌊 Tsunami: MDD 30%+ and profit
+    if (mdd >= 0.30 && ret > 0) return { grade: 'A', nameKey: 'gradeTsunami', descKey: 'gradeTsunamiDesc', emoji: '🌊', color: 'text-teal-400', bgColor: 'bg-teal-400/20', borderColor: 'border-teal-400/50' };
+
+    // ⛵ Viking Ship: MDD 20~30% and slight profit (0~20%)
+    if (mdd >= 0.20 && mdd < 0.30 && ret >= 0 && ret < 20) return { grade: 'B+', nameKey: 'gradeVikingShip', descKey: 'gradeVikingShipDesc', emoji: '⛵', color: 'text-orange-400', bgColor: 'bg-orange-400/20', borderColor: 'border-orange-400/50' };
+
+    // 🗼 Gyro Drop: MDD 20~30% and 20%+ profit
+    if (mdd >= 0.20 && ret >= 20) return { grade: 'A-', nameKey: 'gradeGyroDrop', descKey: 'gradeGyroDropDesc', emoji: '🗼', color: 'text-orange-400', bgColor: 'bg-orange-400/20', borderColor: 'border-orange-400/50' };
+
+    // === MID TIER ===
+    // 🎠 Merry-Go-Round: low MDD, small return
     if (mdd < 0.15 && Math.abs(ret) < 10) return { grade: 'B', nameKey: 'gradeMerryGoRound', descKey: 'gradeMerryGoRoundDesc', emoji: '🎠', color: 'text-emerald-400', bgColor: 'bg-emerald-400/20', borderColor: 'border-emerald-400/50' };
 
-    // Fallback to basic logic based on MDD if no special case matches
+    // 🏄 Wave Pool: MDD 15~20% with profit
+    if (mdd >= 0.15 && mdd < 0.20 && ret > 0) return { grade: 'B', nameKey: 'gradeWavePool', descKey: 'gradeWavePoolDesc', emoji: '🏄', color: 'text-sky-400', bgColor: 'bg-sky-400/20', borderColor: 'border-sky-400/50' };
+
+    // 🛶 Lazy River: MDD < 10% with small profit
+    if (mdd < 0.10 && ret >= 10 && ret < 50) return { grade: 'B-', nameKey: 'gradeLazyRiver', descKey: 'gradeLazyRiverDesc', emoji: '🛶', color: 'text-green-400', bgColor: 'bg-green-400/20', borderColor: 'border-green-400/50' };
+
+    // === FALLBACK ===
     if (mdd >= 0.50) return { grade: 'A+', nameKey: 'gradeBlackHole', descKey: 'gradeBlackHoleDesc', emoji: '🕳️', color: 'text-red-500', bgColor: 'bg-red-500/20', borderColor: 'border-red-500/50' };
     if (mdd >= 0.30) return { grade: 'A', nameKey: 'gradeGyroDrop', descKey: 'gradeGyroDropDesc', emoji: '🗼', color: 'text-orange-400', bgColor: 'bg-orange-400/20', borderColor: 'border-orange-400/50' };
     if (mdd >= 0.20) return { grade: 'B', nameKey: 'gradeMegaStorm', descKey: 'gradeMegaStormDesc', emoji: '🌊', color: 'text-yellow-400', bgColor: 'bg-yellow-400/20', borderColor: 'border-yellow-400/50' };
 
     return { grade: 'C', nameKey: 'gradeKiddy', descKey: 'gradeKiddyDesc', emoji: '👶', color: 'text-cyan-400', bgColor: 'bg-cyan-400/20', borderColor: 'border-cyan-400/50' };
 }
+
 
 // MDD(최대낙폭) 계산
 export function calculateMaxDrawdown(data) {

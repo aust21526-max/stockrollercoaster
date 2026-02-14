@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Flame, Check, X } from 'lucide-react';
+import { ArrowLeft, Flame, Check, X, RefreshCw } from 'lucide-react';
 import { useStockData } from '../hooks/useStockData';
 import RollercoasterChart from './RollercoasterChart';
 
-// Pool of well-known stocks for daily challenge
+// Pool of well-known stocks
 const STOCK_POOL = [
     'AAPL', 'TSLA', 'NVDA', 'AMZN', 'GOOGL', 'META', 'MSFT', 'NFLX',
     'AMD', 'PLTR', 'COIN', 'SQ', 'SHOP', 'PYPL', 'UBER', 'ABNB',
@@ -12,28 +12,31 @@ const STOCK_POOL = [
     'NKE', 'SBUX', 'MCD', 'PEP', 'KO', 'PFE',
 ];
 
-// Deterministic seed based on today's date
+// Deterministic seed based on 10-minute window
 function seededRandom(seed) {
     let x = Math.sin(seed) * 10000;
     return x - Math.floor(x);
 }
 
-function getDailyChallenge() {
-    const now = new Date();
-    const daysSinceEpoch = Math.floor(now.getTime() / 86400000);
-    const seed = daysSinceEpoch * 7919; // Prime-based seed
+function getCurrentRoundId() {
+    // Each round = 10 minutes
+    return Math.floor(Date.now() / (10 * 60 * 1000));
+}
+
+function getMysteryRide(roundId) {
+    const seed = roundId * 7919; // Prime-based seed
 
     // Pick ticker
     const tickerIdx = Math.floor(seededRandom(seed) * STOCK_POOL.length);
     const correctTicker = STOCK_POOL[tickerIdx];
 
-    // Pick start date (random date from past 1-5 years)
+    // Pick start date (1~5 years ago)
     const yearsBack = 1 + Math.floor(seededRandom(seed + 1) * 4);
     const startDate = new Date();
     startDate.setFullYear(startDate.getFullYear() - yearsBack);
     const startStr = startDate.toISOString().split('T')[0];
 
-    // Pick 3 wrong answers (unique, not the correct one)
+    // Pick 3 wrong answers
     const wrongs = new Set();
     let i = 2;
     while (wrongs.size < 3) {
@@ -42,57 +45,82 @@ function getDailyChallenge() {
         i++;
     }
 
-    // Create shuffled options
+    // Shuffle options
     const options = [correctTicker, ...wrongs];
-    // Shuffle deterministically
     for (let j = options.length - 1; j > 0; j--) {
         const k = Math.floor(seededRandom(seed + 100 + j) * (j + 1));
         [options[j], options[k]] = [options[k], options[j]];
     }
 
-    return { correctTicker, startDate: startStr, options, dayId: daysSinceEpoch };
+    return { correctTicker, startDate: startStr, options, roundId };
 }
 
-function getStreak() {
-    const raw = localStorage.getItem('challenge-streak');
-    if (!raw) return { count: 0, lastDay: 0 };
+function getStats() {
+    const raw = localStorage.getItem('mystery-stats');
+    if (!raw) return { correct: 0, total: 0, streak: 0, lastRound: 0 };
     return JSON.parse(raw);
 }
 
-function updateStreak(dayId, correct) {
-    const old = getStreak();
-    if (correct) {
-        if (old.lastDay === dayId - 1 || old.lastDay === dayId) {
-            localStorage.setItem('challenge-streak', JSON.stringify({
-                count: old.lastDay === dayId ? old.count : old.count + 1,
-                lastDay: dayId,
-            }));
-        } else {
-            localStorage.setItem('challenge-streak', JSON.stringify({ count: 1, lastDay: dayId }));
-        }
-    } else {
-        localStorage.setItem('challenge-streak', JSON.stringify({ count: 0, lastDay: dayId }));
+function updateStats(roundId, isCorrect) {
+    const old = getStats();
+    if (old.lastRound === roundId) return; // Already played this round
+
+    const newStreak = isCorrect ? (old.lastRound === roundId - 1 ? old.streak + 1 : 1) : 0;
+    const updated = {
+        correct: old.correct + (isCorrect ? 1 : 0),
+        total: old.total + 1,
+        streak: newStreak,
+        lastRound: roundId,
+    };
+    localStorage.setItem('mystery-stats', JSON.stringify(updated));
+
+    // Submit to leaderboard
+    if (updated.correct > 0) {
+        submitChallengeScore(updated);
     }
 }
 
-function getTodayResult(dayId) {
-    const raw = localStorage.getItem(`challenge-result-${dayId}`);
+async function submitChallengeScore(stats) {
+    try {
+        const nickname = localStorage.getItem('mystery-nickname') || `Rider_${Math.random().toString(36).slice(2, 6)}`;
+        await fetch('/api/leaderboard', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nickname,
+                ticker: 'MYSTERY',
+                returnPct: stats.correct,
+                mdd: stats.total > 0 ? parseFloat(((stats.correct / stats.total) * 100).toFixed(1)) : 0,
+                grade: `${stats.correct}/${stats.total}`,
+                emoji: '🧩',
+                startDate: new Date().toISOString().split('T')[0],
+                isChallenge: true,
+            }),
+        });
+    } catch (e) {
+        // Silent fail
+    }
+}
+
+function getRoundResult(roundId) {
+    const raw = localStorage.getItem(`mystery-round-${roundId}`);
     return raw ? JSON.parse(raw) : null;
 }
 
-function saveTodayResult(dayId, result) {
-    localStorage.setItem(`challenge-result-${dayId}`, JSON.stringify(result));
+function saveRoundResult(roundId, result) {
+    localStorage.setItem(`mystery-round-${roundId}`, JSON.stringify(result));
 }
 
 const DailyChallenge = () => {
-    const challenge = useMemo(() => getDailyChallenge(), []);
+    const [roundId, setRoundId] = useState(getCurrentRoundId());
+    const challenge = useMemo(() => getMysteryRide(roundId), [roundId]);
     const { stockData, loading, error, fetchStockHistory } = useStockData();
     const [selected, setSelected] = useState(null);
     const [revealed, setRevealed] = useState(false);
-    const [streak, setStreak] = useState(getStreak());
+    const [stats, setStats] = useState(getStats());
+    const [countdown, setCountdown] = useState('');
 
-    // Check if already played today
-    const existingResult = useMemo(() => getTodayResult(challenge.dayId), [challenge.dayId]);
+    const existingResult = useMemo(() => getRoundResult(challenge.roundId), [challenge.roundId]);
 
     useEffect(() => {
         fetchStockHistory(challenge.correctTicker, challenge.startDate);
@@ -102,8 +130,32 @@ const DailyChallenge = () => {
         if (existingResult) {
             setSelected(existingResult.selected);
             setRevealed(true);
+        } else {
+            setSelected(null);
+            setRevealed(false);
         }
-    }, [existingResult]);
+    }, [existingResult, roundId]);
+
+    // Countdown timer
+    useEffect(() => {
+        const tick = () => {
+            const now = Date.now();
+            const nextRound = (getCurrentRoundId() + 1) * (10 * 60 * 1000);
+            const diff = nextRound - now;
+            const mins = Math.floor(diff / 60000);
+            const secs = Math.floor((diff % 60000) / 1000);
+            setCountdown(`${mins}m ${String(secs).padStart(2, '0')}s`);
+
+            // Auto-switch when new round starts
+            const newRoundId = getCurrentRoundId();
+            if (newRoundId !== roundId) {
+                setRoundId(newRoundId);
+            }
+        };
+        tick();
+        const interval = setInterval(tick, 1000);
+        return () => clearInterval(interval);
+    }, [roundId]);
 
     const handleGuess = (ticker) => {
         if (revealed) return;
@@ -111,21 +163,12 @@ const DailyChallenge = () => {
         setRevealed(true);
 
         const correct = ticker === challenge.correctTicker;
-        updateStreak(challenge.dayId, correct);
-        setStreak(getStreak());
-        saveTodayResult(challenge.dayId, { selected: ticker, correct });
+        updateStats(challenge.roundId, correct);
+        setStats(getStats());
+        saveRoundResult(challenge.roundId, { selected: ticker, correct });
     };
 
     const isCorrect = selected === challenge.correctTicker;
-
-    const getTimeUntilNextChallenge = () => {
-        const now = new Date();
-        const tmrw = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
-        const diff = tmrw - now;
-        const hours = Math.floor(diff / 3600000);
-        const minutes = Math.floor((diff % 3600000) / 60000);
-        return `${hours}h ${minutes}m`;
-    };
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white px-4 py-8">
@@ -134,26 +177,31 @@ const DailyChallenge = () => {
                     <Link to="/" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm">
                         <ArrowLeft className="w-4 h-4" /> Back
                     </Link>
-                    {streak.count > 0 && (
-                        <div className="flex items-center gap-1 text-amber-400 text-sm font-bold">
-                            <Flame className="w-4 h-4" /> {streak.count}-day streak!
+                    <div className="flex items-center gap-3">
+                        {stats.streak > 0 && (
+                            <div className="flex items-center gap-1 text-amber-400 text-sm font-bold">
+                                <Flame className="w-4 h-4" /> {stats.streak} streak
+                            </div>
+                        )}
+                        <div className="text-slate-500 text-xs font-mono bg-slate-800/50 px-2 py-1 rounded-lg">
+                            {stats.correct}/{stats.total} correct
                         </div>
-                    )}
+                    </div>
                 </div>
 
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-black bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
-                        📅 Daily Mystery Ride
+                        🧩 Mystery Ride
                     </h1>
                     <p className="text-slate-400 text-sm mt-2">
                         Can you guess which stock this rollercoaster belongs to?
                     </p>
                     <p className="text-slate-500 text-xs mt-1">
-                        Next challenge in <span className="text-amber-400 font-mono">{getTimeUntilNextChallenge()}</span>
+                        New mystery in <span className="text-amber-400 font-mono">{countdown}</span> · Updates every 10 min
                     </p>
                 </div>
 
-                {/* Chart (without ticker label) */}
+                {/* Chart */}
                 {loading && (
                     <div className="text-center py-16">
                         <div className="animate-spin w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full mx-auto mb-4"></div>
@@ -189,7 +237,7 @@ const DailyChallenge = () => {
                 {stockData.length > 0 && (
                     <div className="grid grid-cols-2 gap-3 mb-8">
                         {challenge.options.map(ticker => {
-                            let btnClass = 'bg-slate-800/60 border-slate-700/50 text-slate-200 hover:border-amber-500/50';
+                            let btnClass = 'bg-slate-800/60 border-slate-700/50 text-slate-200 hover:border-amber-500/50 hover:bg-slate-800';
                             if (revealed) {
                                 if (ticker === challenge.correctTicker) {
                                     btnClass = 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300';
@@ -226,23 +274,29 @@ const DailyChallenge = () => {
                         <p className={`text-xl font-bold ${isCorrect ? 'text-emerald-400' : 'text-rose-400'}`}>
                             {isCorrect ? 'Correct!' : `Wrong! It was ${challenge.correctTicker}`}
                         </p>
-                        {streak.count > 0 && isCorrect && (
+                        {stats.streak > 0 && isCorrect && (
                             <p className="text-amber-400 text-sm mt-2">
-                                🔥 {streak.count}-day streak! Keep it going!
+                                🔥 {stats.streak} streak! Keep it going!
                             </p>
                         )}
                         <p className="text-slate-400 text-xs mt-3">
-                            Come back tomorrow for a new challenge!
+                            Next mystery in <span className="text-amber-400 font-mono">{countdown}</span>
                         </p>
                     </div>
                 )}
 
-                <div className="text-center">
+                <div className="flex justify-center gap-3">
                     <Link
                         to="/"
                         className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-full font-bold hover:from-cyan-400 hover:to-blue-500 transition-all"
                     >
                         🎢 Try Your Own Ride
+                    </Link>
+                    <Link
+                        to="/leaderboard"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-slate-800 text-amber-400 rounded-full font-bold hover:bg-slate-700 transition-all border border-amber-500/30"
+                    >
+                        🏆 Leaderboard
                     </Link>
                 </div>
             </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Trophy, TrendingUp, TrendingDown, Flame, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Trophy, TrendingUp, TrendingDown, Flame, ArrowLeft, RefreshCw, Puzzle } from 'lucide-react';
 
 const API_BASE = '/api/leaderboard';
 
@@ -8,6 +8,7 @@ const TABS = [
     { key: 'thrilling', label: '🎢 Most Thrilling', icon: Flame, desc: 'Highest MDD — the wildest rides' },
     { key: 'best', label: '🚀 Best Return', icon: TrendingUp, desc: 'Highest profit rides' },
     { key: 'worst', label: '💀 Worst Return', icon: TrendingDown, desc: 'The most painful rides' },
+    { key: 'mystery', label: '🧩 Mystery Ride', icon: Puzzle, desc: 'Most correct guesses in Mystery Ride' },
 ];
 
 const Leaderboard = () => {
@@ -44,6 +45,7 @@ const Leaderboard = () => {
     };
 
     const entries = data ? data[tab] || [] : [];
+    const isMystery = tab === 'mystery';
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white px-4 py-8">
@@ -60,8 +62,7 @@ const Leaderboard = () => {
 
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-black bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
-                        <Trophy className return="w-8 h-8 inline mr-2 text-yellow-400" />
-                        Today's Top Riders
+                        🏆 Today's Top Riders
                     </h1>
                     <p className="text-slate-400 text-sm mt-2">
                         Resets daily · Next reset in <span className="text-amber-400 font-mono">{getTimeUntilReset()}</span>
@@ -76,8 +77,8 @@ const Leaderboard = () => {
                             key={t.key}
                             onClick={() => setTab(t.key)}
                             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${tab === t.key
-                                    ? 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-300 border border-amber-500/40'
-                                    : 'bg-slate-800/60 text-slate-400 border border-slate-700/50 hover:text-white hover:border-slate-600'
+                                ? 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-300 border border-amber-500/40'
+                                : 'bg-slate-800/60 text-slate-400 border border-slate-700/50 hover:text-white hover:border-slate-600'
                                 }`}
                         >
                             {t.label}
@@ -126,8 +127,8 @@ const Leaderboard = () => {
                                 <div
                                     key={entry.id || i}
                                     className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isTop3
-                                            ? 'bg-gradient-to-r from-amber-500/10 to-yellow-500/5 border border-amber-500/30'
-                                            : 'bg-slate-800/40 border border-slate-700/30 hover:border-slate-600/50'
+                                        ? 'bg-gradient-to-r from-amber-500/10 to-yellow-500/5 border border-amber-500/30'
+                                        : 'bg-slate-800/40 border border-slate-700/30 hover:border-slate-600/50'
                                         }`}
                                 >
                                     {/* Rank */}
@@ -144,18 +145,33 @@ const Leaderboard = () => {
                                             <span className={`font-bold truncate ${isTop3 ? 'text-amber-200' : 'text-slate-200'}`}>
                                                 {entry.nickname}
                                             </span>
-                                            <span className="text-slate-500 text-xs font-mono">{entry.ticker}</span>
+                                            {!isMystery && (
+                                                <span className="text-slate-500 text-xs font-mono">{entry.ticker}</span>
+                                            )}
                                         </div>
                                     </div>
 
                                     {/* Stats */}
                                     <div className="text-right">
-                                        <div className={`font-bold text-sm ${entry.returnPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                            {entry.returnPct >= 0 ? '+' : ''}{entry.returnPct}%
-                                        </div>
-                                        <div className="text-slate-500 text-xs">
-                                            MDD -{entry.mdd}%
-                                        </div>
+                                        {isMystery ? (
+                                            <>
+                                                <div className="font-bold text-sm text-amber-400">
+                                                    {entry.returnPct} correct
+                                                </div>
+                                                <div className="text-slate-500 text-xs">
+                                                    {entry.mdd}% accuracy
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className={`font-bold text-sm ${entry.returnPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {entry.returnPct >= 0 ? '+' : ''}{entry.returnPct}%
+                                                </div>
+                                                <div className="text-slate-500 text-xs">
+                                                    MDD -{entry.mdd}%
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
 
                                     {/* Grade */}
@@ -169,12 +185,18 @@ const Leaderboard = () => {
                 )}
 
                 {/* CTA */}
-                <div className="text-center mt-8">
+                <div className="flex justify-center gap-3 mt-8 flex-wrap">
                     <Link
                         to="/"
                         className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-full font-bold hover:from-cyan-400 hover:to-blue-500 transition-all"
                     >
                         🎢 Ride Now & Compete!
+                    </Link>
+                    <Link
+                        to="/challenge"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-slate-800 text-amber-400 rounded-full font-bold hover:bg-slate-700 transition-all border border-amber-500/30"
+                    >
+                        🧩 Mystery Ride
                     </Link>
                 </div>
             </div>

@@ -53,9 +53,15 @@ export async function onRequestGet(context) {
         const entries = await getOrInitLeaderboard(env);
 
         // Sort into categories
-        const thrilling = [...entries].sort((a, b) => b.mdd - a.mdd).slice(0, 20);
-        const best = [...entries].sort((a, b) => b.returnPct - a.returnPct).slice(0, 20);
-        const worst = [...entries].sort((a, b) => a.returnPct - b.returnPct).slice(0, 20);
+        const rideEntries = entries.filter(e => !e.isChallenge);
+        const challengeEntries = entries.filter(e => e.isChallenge);
+
+        const thrilling = [...rideEntries].sort((a, b) => b.mdd - a.mdd).slice(0, 20);
+        const best = [...rideEntries].sort((a, b) => b.returnPct - a.returnPct).slice(0, 20);
+        const worst = [...rideEntries].sort((a, b) => a.returnPct - b.returnPct).slice(0, 20);
+
+        // Mystery Challenge: sort by most correct answers (returnPct = correctCount)
+        const mystery = [...challengeEntries].sort((a, b) => b.returnPct - a.returnPct || b.mdd - a.mdd).slice(0, 20);
 
         return new Response(JSON.stringify({
             date: getTodayKey(),
@@ -63,6 +69,7 @@ export async function onRequestGet(context) {
             thrilling,
             best,
             worst,
+            mystery,
         }), {
             headers: {
                 'Content-Type': 'application/json',
@@ -112,10 +119,11 @@ export async function onRequestPost(context) {
             ticker: String(ticker).toUpperCase().slice(0, 10),
             returnPct: parseFloat(Number(returnPct).toFixed(1)),
             mdd: parseFloat(Number(mdd).toFixed(1)),
-            grade: String(grade).slice(0, 5),
+            grade: String(grade).slice(0, 10),
             emoji: String(emoji || '🎢').slice(0, 4),
             date: String(startDate || '').slice(0, 10),
             timestamp: Date.now(),
+            isChallenge: !!body.isChallenge,
         };
 
         entries.push(newEntry);
