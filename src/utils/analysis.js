@@ -111,21 +111,23 @@ export function findPeakAndTrough(data) {
 // 이벤트 감지 (5일 윈도우) - 기준 완화
 export function detectEvents(data) {
     const events = [];
-    const windowSize = 5;
+    // Changed to 1-day window for strict daily change detection
+    const windowSize = 1;
 
     for (let i = windowSize; i < data.length; i++) {
         const windowStart = data[i - windowSize].close;
         const current = data[i].close;
         const change = ((current - windowStart) / windowStart) * 100;
 
-        // Thresholds relaxed: -5% for drop, +7% for loop
+        // Thresholds: +/- 5% daily change
         if (change < -5) {
-            const recentDrop = events.find(e => e.type === 'drop' && i - e.index < 10);
+            // Check if we already have a drop nearby (prevent clustering)
+            const recentDrop = events.find(e => e.type === 'drop' && i - e.index < 2);
             if (!recentDrop) {
                 events.push({ type: 'drop', index: i, date: data[i].date, close: data[i].close, change });
             }
         } else if (change > 5) {
-            const recentLoop = events.find(e => e.type === 'loop' && i - e.index < 10);
+            const recentLoop = events.find(e => e.type === 'loop' && i - e.index < 2);
             if (!recentLoop) {
                 events.push({ type: 'loop', index: i, date: data[i].date, close: data[i].close, change });
             }

@@ -60,11 +60,15 @@ const CustomDot = (props) => {
     if (!event) return null;
 
     // Dynamic sizing based on data length
-    const dataLength = payload.payload ? payload.payload.totalDataLength : 100; // Passed from parent
-    let scale = 0.6; // Further reduced base scale (was 0.8)
-    if (dataLength > 365) scale = 0.3; // (was 0.4)
-    else if (dataLength > 100) scale = 0.45; // (was 0.6)
-    else if (dataLength > 50) scale = 0.55; // (was 0.7)
+    // Dynamic sizing based on data length and screen width
+    const dataLength = payload.payload ? payload.payload.totalDataLength : 100;
+    const isMobile = window.innerWidth < 768; // Simple check for mobile
+
+    let scale = isMobile ? 0.55 : 0.75; // Increased base scale for desktop
+
+    if (dataLength > 365) scale = isMobile ? 0.3 : 0.4;
+    else if (dataLength > 100) scale = isMobile ? 0.4 : 0.55;
+    else if (dataLength > 50) scale = isMobile ? 0.5 : 0.65;
 
     let emoji = '';
     let bgColor = '';
