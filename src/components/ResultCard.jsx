@@ -188,7 +188,7 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
         <div className="w-full max-w-4xl mx-auto mt-4 px-4">
             <div
                 ref={cardRef}
-                className="bg-slate-900 rounded-3xl relative overflow-hidden shadow-2xl border-x-4 border-slate-800"
+                className="bg-slate-900 rounded-3xl relative overflow-hidden shadow-2xl border-x-2 md:border-x-4 border-slate-800"
                 style={{
                     backgroundImage: 'radial-gradient(circle at 0% 50%, transparent 15px, #0f172a 16px), radial-gradient(circle at 100% 50%, transparent 15px, #0f172a 16px)',
                     backgroundSize: '100% 100%',
@@ -200,7 +200,7 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
                 <div className="absolute bottom-0 left-0 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
                 {/* Ticket Stub Header */}
-                <div className="relative z-10 p-5 md:p-8 border-b-2 border-dashed border-slate-700/50 flex flex-col md:flex-row justify-between items-center bg-slate-800/30 gap-4">
+                <div className="relative z-10 p-4 md:p-8 border-b-2 border-dashed border-slate-700/50 flex flex-col md:flex-row justify-between items-center bg-slate-800/30 gap-4">
                     <div className="text-center md:text-left">
                         <p className="text-slate-500 text-xs font-bold tracking-[0.2em] uppercase mb-1">{t('ticketAdmitOne')}</p>
                         <h2 className="text-3xl md:text-5xl font-black text-white tracking-tight">
@@ -239,7 +239,7 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
                     </div>
                 )}
 
-                <div className="relative z-10 p-6 md:p-8">
+                <div className="relative z-10 p-3 md:p-8">
                     {/* Ride Grade */}
                     <div className={`${rideGrade.bgColor} border ${rideGrade.color.replace('text-', 'border-')}/20 rounded-xl p-4 mb-6 flex items-center gap-4`}>
                         <span className="text-4xl">{rideGrade.emoji}</span>

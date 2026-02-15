@@ -59,23 +59,22 @@ const CustomDot = (props) => {
     const event = payload._event;
     if (!event) return null;
 
-    // Dynamic sizing based on data length
     // Dynamic sizing based on data length and screen width
     const dataLength = payload.payload ? payload.payload.totalDataLength : 100;
-    const isMobile = window.innerWidth < 768; // Simple check for mobile
+    // isMobile is passed from parent now
 
-    let scale = isMobile ? 0.55 : 0.75; // Increased base scale for desktop
+    let scale = isMobile ? 0.55 : 0.9; // Increased base scale for desktop (was 0.75)
 
-    if (dataLength > 365) scale = isMobile ? 0.3 : 0.4;
-    else if (dataLength > 100) scale = isMobile ? 0.4 : 0.55;
-    else if (dataLength > 50) scale = isMobile ? 0.5 : 0.65;
+    if (dataLength > 365) scale = isMobile ? 0.3 : 0.5; // (was 0.4)
+    else if (dataLength > 100) scale = isMobile ? 0.4 : 0.65; // (was 0.55)
+    else if (dataLength > 50) scale = isMobile ? 0.5 : 0.8; // (was 0.65)
 
     let emoji = '';
     let bgColor = '';
     let borderColor = '';
-    let size = 5 * scale; // Reduced from 6
-    let fontSize = 12 * scale; // Reduced from 14
-    let yOffset = -16 * scale; // Adjusted offset
+    let size = 5 * scale;
+    let fontSize = 12 * scale;
+    let yOffset = -16 * scale;
 
     switch (event) {
         case 'drop':
@@ -92,16 +91,16 @@ const CustomDot = (props) => {
             emoji = '🏔️';
             bgColor = '#fbbf24';
             borderColor = '#fde68a';
-            size = 7 * scale; // Reduced from 8
-            fontSize = 14 * scale; // Reduced from 16
+            size = 7 * scale;
+            fontSize = 14 * scale;
             yOffset = -20 * scale;
             break;
         case 'trough':
             emoji = '🕳️';
             bgColor = '#f43f5e';
             borderColor = '#fda4af';
-            size = 7 * scale; // Reduced from 8
-            fontSize = 14 * scale; // Reduced from 16
+            size = 7 * scale;
+            fontSize = 14 * scale;
             yOffset = 18 * scale;
             break;
         case 'start':
@@ -138,6 +137,8 @@ const CustomDot = (props) => {
             }}
         >
             <title>{`${emoji} ${payload.date}\nPrice: $${payload.close.toFixed(2)}\nChange: ${changePct}`}</title>
+            {/* Magnet Hit Area - Larger transparent circle for easier hover/click */}
+            <circle cx={cx} cy={cy} r={size + 15} fill="transparent" />
             <circle cx={cx} cy={cy} r={size + 3 * scale} fill={bgColor} opacity={0.2} />
             <circle cx={cx} cy={cy} r={size} fill={bgColor} stroke={borderColor} strokeWidth={1.5 * scale} />
             <text
@@ -270,7 +271,7 @@ const RollercoasterChart = ({ data, avgPrice, ticker, comparisonData, comparison
                 {t('replayRide')}
             </button>
 
-            <div className="w-full h-[420px] relative">
+            <div className="w-full h-[320px] md:h-[420px] relative">
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
                         data={chartData}
