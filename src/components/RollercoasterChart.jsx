@@ -61,16 +61,17 @@ const CustomDot = (props) => {
 
     // Dynamic sizing based on data length
     const dataLength = payload.payload ? payload.payload.totalDataLength : 100; // Passed from parent
-    let scale = 1;
-    if (dataLength > 365) scale = 0.5;
-    else if (dataLength > 100) scale = 0.7;
+    let scale = 0.6; // Further reduced base scale (was 0.8)
+    if (dataLength > 365) scale = 0.3; // (was 0.4)
+    else if (dataLength > 100) scale = 0.45; // (was 0.6)
+    else if (dataLength > 50) scale = 0.55; // (was 0.7)
 
     let emoji = '';
     let bgColor = '';
     let borderColor = '';
-    let size = 8 * scale;
-    let fontSize = 18 * scale;
-    let yOffset = -22 * scale; // Adjust offset based on scale
+    let size = 5 * scale; // Reduced from 6
+    let fontSize = 12 * scale; // Reduced from 14
+    let yOffset = -16 * scale; // Adjusted offset
 
     switch (event) {
         case 'drop':
@@ -87,17 +88,17 @@ const CustomDot = (props) => {
             emoji = '🏔️';
             bgColor = '#fbbf24';
             borderColor = '#fde68a';
-            size = 10 * scale;
-            fontSize = 20 * scale;
-            yOffset = -26 * scale;
+            size = 7 * scale; // Reduced from 8
+            fontSize = 14 * scale; // Reduced from 16
+            yOffset = -20 * scale;
             break;
         case 'trough':
             emoji = '🕳️';
             bgColor = '#f43f5e';
             borderColor = '#fda4af';
-            size = 10 * scale;
-            fontSize = 20 * scale;
-            yOffset = 22 * scale;
+            size = 7 * scale; // Reduced from 8
+            fontSize = 14 * scale; // Reduced from 16
+            yOffset = 18 * scale;
             break;
         case 'start':
             emoji = '🎫';
@@ -112,6 +113,9 @@ const CustomDot = (props) => {
         default:
             return null;
     }
+
+    // Format change percentage
+    const changePct = payload.change ? (payload.change > 0 ? '+' : '') + payload.change.toFixed(2) + '%' : '';
 
     return (
         <g
@@ -129,8 +133,9 @@ const CustomDot = (props) => {
                 }
             }}
         >
-            <circle cx={cx} cy={cy} r={size + 4 * scale} fill={bgColor} opacity={0.2} />
-            <circle cx={cx} cy={cy} r={size} fill={bgColor} stroke={borderColor} strokeWidth={2 * scale} />
+            <title>{`${emoji} ${payload.date}\nPrice: $${payload.close.toFixed(2)}\nChange: ${changePct}`}</title>
+            <circle cx={cx} cy={cy} r={size + 3 * scale} fill={bgColor} opacity={0.2} />
+            <circle cx={cx} cy={cy} r={size} fill={bgColor} stroke={borderColor} strokeWidth={1.5 * scale} />
             <text
                 x={cx}
                 y={cy + yOffset}
@@ -144,10 +149,10 @@ const CustomDot = (props) => {
             {(event === 'peak' || event === 'trough') && (
                 <text
                     x={cx}
-                    y={cy + (event === 'peak' ? -42 * scale : 40 * scale)}
+                    y={cy + (event === 'peak' ? -36 * scale : 34 * scale)}
                     textAnchor="middle"
                     dominantBaseline="central"
-                    fontSize={10 * scale}
+                    fontSize={9 * scale}
                     fontWeight="bold"
                     fill={event === 'peak' ? '#10b981' : '#f43f5e'}
                 >

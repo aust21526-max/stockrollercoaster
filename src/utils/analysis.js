@@ -124,7 +124,7 @@ export function detectEvents(data) {
             if (!recentDrop) {
                 events.push({ type: 'drop', index: i, date: data[i].date, close: data[i].close, change });
             }
-        } else if (change > 7) {
+        } else if (change > 5) {
             const recentLoop = events.find(e => e.type === 'loop' && i - e.index < 10);
             if (!recentLoop) {
                 events.push({ type: 'loop', index: i, date: data[i].date, close: data[i].close, change });
