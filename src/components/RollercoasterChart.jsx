@@ -53,7 +53,7 @@ const CustomTooltip = ({ active, payload, label, ticker }) => {
 };
 
 const CustomDot = (props) => {
-    const { cx, cy, payload, ticker, onEventClick } = props;
+    const { cx, cy, payload, ticker, onEventClick, isMobile } = props;
     if (!cx || !cy || !payload) return null;
 
     const event = payload._event;
@@ -243,6 +243,14 @@ const RollercoasterChart = ({ data, avgPrice, ticker, comparisonData, comparison
     const dropCount = events.filter(e => e.type === 'drop').length;
     const loopCount = events.filter(e => e.type === 'loop').length;
 
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const [selectedEvent, setSelectedEvent] = useState(null);
 
     const handleEventClick = (eventData) => {
@@ -382,7 +390,7 @@ const RollercoasterChart = ({ data, avgPrice, ticker, comparisonData, comparison
                             fill="none"
                             filter="url(#glow)"
                             animationDuration={0} // Manual animation via state slice
-                            dot={<CustomDot ticker={ticker} onEventClick={handleEventClick} />}
+                            dot={<CustomDot ticker={ticker} onEventClick={handleEventClick} isMobile={isMobile} />}
                             activeDot={{ r: 6, stroke: '#22d3ee', strokeWidth: 2, fill: '#0f172a' }}
                             name={ticker}
                         />
