@@ -200,14 +200,26 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
                 <div className="absolute bottom-0 left-0 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
                 {/* Ticket Stub Header */}
-                <div className="relative z-10 p-6 md:p-8 border-b-2 border-dashed border-slate-700/50 flex justify-between items-center bg-slate-800/30">
-                    <div>
+                <div className="relative z-10 p-5 md:p-8 border-b-2 border-dashed border-slate-700/50 flex flex-col md:flex-row justify-between items-center bg-slate-800/30 gap-4">
+                    <div className="text-center md:text-left">
                         <p className="text-slate-500 text-xs font-bold tracking-[0.2em] uppercase mb-1">{t('ticketAdmitOne')}</p>
                         <h2 className="text-3xl md:text-5xl font-black text-white tracking-tight">
                             {ticker} <span className="text-cyan-400">RIDE</span>
                         </h2>
                     </div>
-                    <div className="text-right">
+
+                    {/* Battle Result (Responsive) */}
+                    {battleInfo && (
+                        <div className={`border-2 border-double ${totalReturn >= battleInfo.returnRate ? 'border-emerald-400 bg-emerald-900/60 text-emerald-400' : 'border-rose-400 bg-rose-900/60 text-rose-400'} px-3 py-1.5 rounded-lg backdrop-blur-sm text-center shadow-lg animate-bounce-in flex items-center gap-2`}>
+                            <span className="text-2xl">{totalReturn >= battleInfo.returnRate ? '🏆' : '💀'}</span>
+                            <div>
+                                <div className="text-sm font-black uppercase tracking-wider">{totalReturn >= battleInfo.returnRate ? 'WINNER' : 'DEFEATED'}</div>
+                                <div className="text-[10px] font-bold opacity-80">vs {battleInfo.name}</div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="text-center md:text-right">
                         <p className="text-slate-500 text-xs font-mono mb-1">{t('ticketNumber')}</p>
                         <div className={`px-4 py-2 rounded-lg font-black text-xl md:text-2xl border ${isProfit ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
                             {totalReturn > 0 ? '+' : ''}{totalReturn.toFixed(2)}%
@@ -215,24 +227,15 @@ const ResultCard = ({ ticker, data, chartNode, avgPrice, quantity, comparisonTic
                     </div>
                 </div>
 
-                {/* Viral Badges Overlay */}
-                <div className="absolute top-24 right-6 z-20 flex flex-col gap-3 rotate-6 pointer-events-none opacity-90">
-                    {badges.map(badge => (
-                        <div key={badge.id} className={`border-4 border-double ${badge.color.replace('text-', 'border-')} p-2 rounded-lg bg-slate-900/90 backdrop-blur-sm text-center shadow-lg transform hover:scale-110 transition-transform duration-300`}>
-                            <div className="text-2xl animate-bounce">{badge.emoji}</div>
-                            <div className={`text-[10px] font-black uppercase tracking-wider ${badge.color}`}>{t(badge.nameKey)}</div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Battle Result Overlay */}
-                {battleInfo && (
-                    <div className="absolute top-24 left-6 z-20 -rotate-6 pointer-events-none opacity-90">
-                        <div className={`border-4 border-double ${totalReturn >= battleInfo.returnRate ? 'border-emerald-400 bg-emerald-900/90 text-emerald-400' : 'border-rose-400 bg-rose-900/90 text-rose-400'} p-4 rounded-lg backdrop-blur-sm text-center shadow-xl animate-bounce-in`}>
-                            <div className="text-4xl mb-1">{totalReturn >= battleInfo.returnRate ? '🏆' : '💀'}</div>
-                            <div className="text-xl font-black uppercase tracking-wider">{totalReturn >= battleInfo.returnRate ? 'WINNER' : 'DEFEATED'}</div>
-                            <div className="text-[10px] font-bold mt-1">vs {battleInfo.name}</div>
-                        </div>
+                {/* Viral Badges (Responsive Flow) */}
+                {badges.length > 0 && (
+                    <div className="relative z-10 px-6 pt-4 flex flex-wrap gap-2 justify-center md:justify-end">
+                        {badges.map(badge => (
+                            <div key={badge.id} className={`border-2 border-double ${badge.color.replace('text-', 'border-')} px-2 py-1 rounded-md bg-slate-900/80 backdrop-blur-sm shadow-sm flex items-center gap-1.5 transform hover:scale-105 transition-transform duration-300`}>
+                                <span className="text-lg">{badge.emoji}</span>
+                                <span className={`text-[10px] font-bold uppercase tracking-wider ${badge.color}`}>{t(badge.nameKey)}</span>
+                            </div>
+                        ))}
                     </div>
                 )}
 

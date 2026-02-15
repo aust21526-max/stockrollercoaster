@@ -59,12 +59,18 @@ const CustomDot = (props) => {
     const event = payload._event;
     if (!event) return null;
 
+    // Dynamic sizing based on data length
+    const dataLength = payload.payload ? payload.payload.totalDataLength : 100; // Passed from parent
+    let scale = 1;
+    if (dataLength > 365) scale = 0.5;
+    else if (dataLength > 100) scale = 0.7;
+
     let emoji = '';
     let bgColor = '';
     let borderColor = '';
-    let size = 8;
-    let fontSize = 18;
-    let yOffset = -22;
+    let size = 8 * scale;
+    let fontSize = 18 * scale;
+    let yOffset = -22 * scale; // Adjust offset based on scale
 
     switch (event) {
         case 'drop':
@@ -81,17 +87,17 @@ const CustomDot = (props) => {
             emoji = '🏔️';
             bgColor = '#fbbf24';
             borderColor = '#fde68a';
-            size = 10;
-            fontSize = 20;
-            yOffset = -26;
+            size = 10 * scale;
+            fontSize = 20 * scale;
+            yOffset = -26 * scale;
             break;
         case 'trough':
             emoji = '🕳️';
             bgColor = '#f43f5e';
             borderColor = '#fda4af';
-            size = 10;
-            fontSize = 20;
-            yOffset = 22;
+            size = 10 * scale;
+            fontSize = 20 * scale;
+            yOffset = 22 * scale;
             break;
         case 'start':
             emoji = '🎫';
@@ -123,8 +129,8 @@ const CustomDot = (props) => {
                 }
             }}
         >
-            <circle cx={cx} cy={cy} r={size + 4} fill={bgColor} opacity={0.2} />
-            <circle cx={cx} cy={cy} r={size} fill={bgColor} stroke={borderColor} strokeWidth={2} />
+            <circle cx={cx} cy={cy} r={size + 4 * scale} fill={bgColor} opacity={0.2} />
+            <circle cx={cx} cy={cy} r={size} fill={bgColor} stroke={borderColor} strokeWidth={2 * scale} />
             <text
                 x={cx}
                 y={cy + yOffset}
@@ -138,10 +144,10 @@ const CustomDot = (props) => {
             {(event === 'peak' || event === 'trough') && (
                 <text
                     x={cx}
-                    y={cy + (event === 'peak' ? -42 : 40)}
+                    y={cy + (event === 'peak' ? -42 * scale : 40 * scale)}
                     textAnchor="middle"
                     dominantBaseline="central"
-                    fontSize={10}
+                    fontSize={10 * scale}
                     fontWeight="bold"
                     fill={event === 'peak' ? '#10b981' : '#f43f5e'}
                 >
@@ -221,6 +227,7 @@ const RollercoasterChart = ({ data, avgPrice, ticker, comparisonData, comparison
             aboveLine: d.close >= initialPrice ? d.close : initialPrice,
             belowLine: d.close < initialPrice ? d.close : initialPrice,
             compClose: compMap.get(d.date) || null,
+            totalDataLength: data.length,
         }));
     }, [data, events, peakIdx, troughIdx, initialPrice, comparisonData, animEndIndex]);
 
