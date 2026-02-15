@@ -63,18 +63,18 @@ const CustomDot = (props) => {
     const dataLength = payload.payload ? payload.payload.totalDataLength : 100;
     // isMobile is passed from parent now
 
-    let scale = isMobile ? 0.55 : 1.25; // Further increased base scale for desktop (was 0.9)
+    let scale = isMobile ? 0.55 : 1.5; // Further increased base scale for desktop (was 1.25)
 
-    if (dataLength > 365) scale = isMobile ? 0.3 : 0.65; // (was 0.5)
-    else if (dataLength > 100) scale = isMobile ? 0.4 : 0.85; // (was 0.65)
-    else if (dataLength > 50) scale = isMobile ? 0.5 : 1.05; // (was 0.8)
+    if (dataLength > 365) scale = isMobile ? 0.3 : 0.8; // (was 0.65)
+    else if (dataLength > 100) scale = isMobile ? 0.4 : 1.0; // (was 0.85)
+    else if (dataLength > 50) scale = isMobile ? 0.5 : 1.3; // (was 1.05)
 
     let emoji = '';
     let bgColor = '';
     let borderColor = '';
-    let size = 5 * scale;
-    let fontSize = 12 * scale;
-    let yOffset = -16 * scale;
+    let size = 7 * scale; // Increased from 5
+    let fontSize = 16 * scale; // Increased from 12
+    let yOffset = -20 * scale; // Adjusted offset for larger emoji
 
     switch (event) {
         case 'drop':
