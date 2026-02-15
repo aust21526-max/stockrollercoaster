@@ -4,197 +4,197 @@ import { Link } from 'react-router-dom';
 const articles = [
     {
         id: 1,
-        title: '닷컴 버블 붕괴 (2000): 인터넷 열풍이 남긴 교훈',
+        title: 'The Dot-com Bubble Burst (2000): Lessons from the Internet Craze',
         date: '2026-01-15',
-        content: `1990년대 후반, 인터넷이라는 혁명적 기술에 대한 기대감은 전 세계 투자자들을 광기에 빠뜨렸습니다. ".com"이라는 접미사만 붙이면 기업 가치가 수십 배로 뛰었고, 매출은커녕 사업 계획서조차 없는 회사들이 수십억 달러의 기업가치를 인정받았습니다. 나스닥 종합지수는 1995년 약 1,000포인트에서 2000년 3월 5,048포인트까지 폭등했습니다.
+        content: `In the late 1990s, anticipation for the revolutionary technology called the Internet drove global investors into a frenzy. Ideally adding the suffix ".com" to a company name caused its value to jump dozens of times, and companies with no sales, let alone business plans, were valued at billions of dollars. The NASDAQ Composite Index skyrocketed from about 1,000 points in 1995 to 5,048 points in March 2000.
 
-하지만 거품은 오래가지 못했습니다. 실적 없는 기업들의 실체가 드러나기 시작하면서, 나스닥은 2000년 3월 고점에서 2002년 10월 1,114포인트까지 약 78%가 폭락했습니다. 시스코, 인텔 같은 우량주조차 80% 이상 빠졌고, 수백 개의 닷컴 기업이 파산했습니다. Pets.com, Webvan, eToys 같은 한때 유명했던 기업들은 역사의 뒤편으로 사라졌습니다.
+However, the bubble did not last long. As the reality of companies without earnings began to be revealed, the NASDAQ plunged about 78% from its peak in March 2000 to 1,114 points in October 2002. Even blue-chip stocks like Cisco and Intel fell more than 80%, and hundreds of dot-com companies went bankrupt. Once-famous companies like Pets.com, Webvan, and eToys disappeared into history.
 
-닷컴 버블이 현대 투자자들에게 남긴 가장 중요한 교훈은 "기술의 혁신성과 기업의 수익성은 별개"라는 사실입니다. 인터넷 자체는 진짜 혁명이었지만, 그 혁명으로 돈을 버는 기업은 극소수에 불과했습니다. 투자 심리가 과열될 때일수록, 펀더멘털(기업의 실질적 가치)을 냉정하게 분석하는 습관이 중요합니다.
+The most important lesson the Dot-com Bubble left for modern investors is that "technological innovation and corporate profitability are separate." The Internet itself was a real revolution, but very few companies made money from it. When investment sentiment overheats, the habit of coolly analyzing fundamentals (the actual value of a company) becomes even more important.
 
-또한 군중 심리의 위험성을 잘 보여줍니다. "남들이 다 하니까 나도" 하는 식의 투자는 결국 큰 손실로 이어질 수 있습니다. 워런 버핏은 이 시기에 IT 주식에 투자하지 않아 "시대에 뒤처졌다"는 비판을 받았지만, 결국 그의 원칙이 옳았음이 증명되었습니다. 투자에서 가장 어려운 것은 군중과 반대로 걸을 수 있는 용기를 갖는 것입니다.`
+It also demonstrates the danger of herd mentality. Investing with the mindset of "everyone else is doing it, so should I" can eventually lead to huge losses. Warren Buffett was criticized for being "behind the times" for not investing in IT stocks during this period, but his principles eventually proved correct. The hardest part of investing is having the courage to walk against the crowd.`
     },
     {
         id: 2,
-        title: '리먼 브라더스 파산과 글로벌 금융위기 (2008): 탐욕의 대가',
+        title: 'Lehman Brothers Bankruptcy & Global Financial Crisis (2008): The Price of Greed',
         date: '2026-01-22',
-        content: `2008년 9월 15일, 158년 역사의 미국 4대 투자은행 리먼 브라더스가 파산 신청을 했습니다. 이 사건은 서브프라임 모기지(비우량 주택담보대출) 사태로 촉발된 글로벌 금융위기의 상징이 되었습니다. S&P 500은 2007년 10월 고점 1,576에서 2009년 3월 676까지 약 57% 하락했습니다.
+        content: `On September 15, 2008, Lehman Brothers, a US investment bank with a 158-year history, filed for bankruptcy. This event became the symbol of the global financial crisis triggered by the subprime mortgage (non-prime mortgage loan) crisis. The S&P 500 fell about 57% from its peak of 1,576 in October 2007 to 676 in March 2009.
 
-위기의 근본 원인은 복잡했습니다. 저금리 환경에서 은행들은 신용도가 낮은 사람들에게도 대출을 남발했고, 이 대출들이 복잡한 파생상품(CDO, MBS 등)으로 포장되어 전 세계에 판매되었습니다. 신용평가사들은 이 위험한 상품들에 AAA 최고 등급을 부여했고, AIG 같은 보험사들은 이 상품들에 보험(CDS)을 걸었습니다. 모든 것이 "주택 가격은 절대 떨어지지 않는다"는 전제 위에 세워진 카드 성이었습니다.
+The root cause of the crisis was complex. In a low-interest-rate environment, banks recklessly issued loans to people with low credit ratings, and these loans were packaged into complex derivatives (CDOs, MBS, etc.) and sold worldwide. Credit rating agencies gave these risky products AAA top ratings, and insurance companies like AIG insured these products (CDS). Everything was a house of cards built on the premise that "housing prices never fall."
 
-개인 투자자에게 이 사건은 "시스템 리스크"의 존재를 알려주었습니다. 아무리 좋은 주식을 보유하고 있어도, 금융 시스템 전체가 흔들리면 모든 자산이 동반 하락합니다. 분산 투자를 하더라도, 같은 시스템 안에서의 분산은 한계가 있음을 인식해야 합니다. 그래서 자산군 분산(주식, 채권, 금, 부동산 등)이 중요합니다.
+For individual investors, this event revealed the existence of "systemic risk." No matter how good the stocks you hold are, if the entire financial system shakes, all assets fall together. Even if you diversify, you must recognize that diversification within the same system has limits. That is why asset class diversification (stocks, bonds, gold, real estate, etc.) is important.
 
-한 가지 긍정적인 점은, 이 위기를 견딘 투자자들은 그 후 역사상 가장 긴 강세장(2009~2020)의 혜택을 누렸다는 것입니다. S&P 500은 2009년 저점에서 2020년 초까지 약 400% 상승했습니다. "가장 어두운 밤이 지나야 새벽이 온다"는 말이 주식 시장에서도 통합니다.`
+One positive point is that investors who endured this crisis enjoyed the benefits of the longest bull market in history (2009-2020). The S&P 500 rose about 400% from its 2009 low to early 2020. The saying "The dawn comes after the darkest night" also applies to the stock market.`
     },
     {
         id: 3,
-        title: '블랙 먼데이 (1987): 하루 만에 22% 폭락한 날',
+        title: 'Black Monday (1987): The Day the Market Crashed 22%',
         date: '2026-01-29',
-        content: `1987년 10월 19일, 다우존스 산업평균지수는 단 하루 만에 22.6% 폭락했습니다. 이는 미국 증시 역사상 하루 최대 낙폭으로, 아직까지 이 기록은 깨지지 않았습니다. 오늘날 가치로 환산하면 다우가 하루에 약 8,000포인트 이상 떨어진 것과 같습니다.
+        content: `On October 19, 1987, the Dow Jones Industrial Average plunged 22.6% in a single day. This is the largest one-day drop in US stock market history, a record that has yet to be broken. In today's terms, it would be equivalent to the Dow falling more than 8,000 points in a day.
 
-블랙 먼데이의 원인에 대해서는 아직도 논쟁이 있지만, 몇 가지 요인이 복합적으로 작용한 것으로 분석됩니다. 당시 널리 사용되던 "포트폴리오 보험(Portfolio Insurance)"이라는 자동매매 전략이 하락을 가속화시켰습니다. 컴퓨터가 주가 하락을 감지하면 자동으로 선물을 매도하고, 이것이 시장을 더 끌어내리면 또 매도하는 악순환이 발생한 것입니다. 오늘날의 용어로는 "알고리즘 트레이딩의 실패"라고 할 수 있습니다.
+There is still debate about the cause of Black Monday, but it is analyzed that several factors acted in combination. An automated trading strategy called "Portfolio Insurance," which was widely used at the time, accelerated the decline. When computers detected a drop in stock prices, they automatically sold futures, and when this dragged the market down further, a vicious cycle of selling occurred. In today's terms, it can be called a "failure of algorithmic trading."
 
-흥미로운 점은, 블랙 먼데이 이후의 회복이 놀라울 정도로 빨랐다는 것입니다. 다우는 약 2년 만에 이전 고점을 회복했고, 그 후 1990년대 대세 상승장으로 이어졌습니다. 패닉에 시장을 빠져나간 투자자들은 이 회복의 기회를 놓쳤습니다.
+Interestingly, the recovery after Black Monday was surprisingly fast. The Dow recovered its previous high in about two years, leading to the massive bull market of the 1990s. Investors who panicked and left the market missed this opportunity for recovery.
 
-블랙 먼데이가 남긴 교훈은 명확합니다. 첫째, 시장의 단기 움직임은 예측 불가능합니다. 전날까지 아무 징조가 없었습니다. 둘째, 공포에 의한 매도는 최악의 결정일 수 있습니다. 하락 당일 매도한 투자자는 22%의 손실을 확정 지었지만, 버틴 투자자는 2년 후 원금을 회복했습니다. 셋째, 시스템 리스크에 대비하기 위해 과도한 레버리지(빚투)는 반드시 피해야 합니다. 레버리지 상태에서 22% 하락은 계좌 전체가 증발하는 것을 의미합니다.`
+The lessons left by Black Monday are clear. First, short-term market movements are unpredictable. There were no signs until the day before. Second, selling out of fear can be the worst decision. Investors who sold on the day of the crash locked in a 22% loss, but those who held on recovered their principal two years later. Third, excessive leverage (debt investing) must be avoided to prepare for systemic risk. A 22% drop in a leveraged state means the entire account evaporates.`
     },
     {
         id: 4,
-        title: '코로나 크래시 (2020): 역사상 가장 빠른 폭락과 회복',
+        title: 'The Covid Crash (2020): Fastest Crash and Recovery in History',
         date: '2026-02-05',
-        content: `2020년 2월, 코로나19 바이러스의 전 세계적 확산으로 금융 시장은 패닉에 빠졌습니다. S&P 500은 2020년 2월 19일 고점에서 3월 23일 저점까지 불과 23 거래일 만에 33.9% 하락했습니다. 이는 역사상 가장 빠른 약세장(고점 대비 20% 이상 하락) 진입 기록이었습니다.
+        content: `In February 2020, financial markets panicked due to the global spread of the COVID-19 virus. The S&P 500 fell 33.9% from its peak on February 19, 2020, to its low on March 23, in just 23 trading days. This was the fastest entry into a bear market (a drop of more than 20% from the peak) in history.
 
-전례 없는 봉쇄 조치(Lockdown)로 전 세계의 경제 활동이 동시에 멈추었습니다. 항공사, 호텔, 레스토랑 주식은 70~80% 폭락했고, 원유 선물은 역사상 최초로 마이너스 가격을 기록했습니다. VIX(공포지수)는 82.69를 기록하며 2008년 금융위기 당시의 80.86마저 넘어섰습니다. 당시 시장의 공포감은 이루 말할 수 없었습니다.
+Unprecedented lockdowns halted economic activity around the world simultaneously. Airline, hotel, and restaurant stocks plunged 70-80%, and crude oil futures recorded negative prices for the first time in history. The VIX (Fear Index) recorded 82.69, surpassing even the 80.86 during the 2008 financial crisis. The fear in the market at the time was indescribable.
 
-그러나 이후의 반등은 더욱 극적이었습니다. 미 연방준비제도(Fed)의 무제한 양적완화, 대규모 재정부양책, 그리고 백신 개발 소식에 시장은 V자 반등했습니다. S&P 500은 고점 회복에 불과 5개월밖에 걸리지 않았고, 나스닥은 더 빠르게 신고가를 경신했습니다. 테슬라, 줌(Zoom), 페이스북 등 "언택트" 수혜주들은 수배에서 수십 배의 수익률을 기록했습니다.
+However, the subsequent rebound was even more dramatic. With the US Federal Reserve's unlimited quantitative easing, massive fiscal stimulus packages, and news of vaccine development, the market made a V-shaped recovery. It took only 5 months for the S&P 500 to recover its peak, and the NASDAQ broke new highs even faster. "Untact" beneficiaries like Tesla, Zoom, and Facebook recorded returns of several to dozens of times.
 
-코로나 크래시의 교훈은 다층적입니다. 우선, 예측 불가능한 "블랙 스완(Black Swan)" 사건은 언제든 발생할 수 있으므로, 비상 자금(현금)을 항상 일정 비율 보유할 필요가 있습니다. 또한, 공포가 극에 달했을 때 매수한 투자자들은 역사적 수익률을 올렸습니다. "위기는 곧 기회"라는 말이 가장 잘 적용된 사례입니다. 마지막으로, 중앙은행과 정부의 정책 대응이 시장에 미치는 영향이 얼마나 큰지를 실감할 수 있는 사건이었습니다.`
+The lessons of the Covid Crash are multi-layered. First, unpredictable "Black Swan" events can happen at any time, so it is necessary to always hold a certain percentage of emergency funds (cash). Second, investors who bought when fear was at its peak achieved historical returns. It is a case where the saying "Crisis is opportunity" applied best. Finally, it was an event where we could realize how significant the impact of central bank and government policy responses is on the market.`
     },
     {
         id: 5,
-        title: '아시아 금융위기 (1997): IMF와 한국의 경험',
+        title: 'Asian Financial Crisis (1997): IMF and the Korean Experience',
         date: '2026-02-12',
-        content: `1997년 7월, 태국의 바트화 폭락을 시작으로 아시아 전역에 금융위기가 확산되었습니다. 한국 역시 외환보유고 부족과 단기 외채 과다로 IMF(국제통화기금)에 구제금융을 신청해야 했습니다. 코스피 지수는 1994년 고점 1,145에서 1998년 6월 280까지 약 75% 폭락했고, 원달러 환율은 800원대에서 2,000원 가까이 치솟았습니다.
+        content: `In July 1997, starting with the collapse of the Thai baht, a financial crisis spread across Asia. South Korea also had to apply for an IMF (International Monetary Fund) bailout due to a lack of foreign exchange reserves and excessive short-term foreign debt. The KOSPI index plunged about 75% from its peak of 1,145 in 1994 to 280 in June 1998, and the won-dollar exchange rate soared from the 800 won range to nearly 2,000 won.
 
-IMF 위기의 근본 원인은 한국 경제의 구조적 문제에 있었습니다. 재벌 기업들의 과도한 차입 경영(부채비율 300~400%가 일반적이었음), 정경유착, 금융기관의 부실한 리스크 관리, 그리고 외환 시장의 미성숙이 복합적으로 작용했습니다. 위기가 발생하자, 외국 자본이 일시에 빠져나가면서 외환보유고가 바닥을 드러냈습니다.
+The root cause of the IMF crisis lay in structural problems in the Korean economy. Excessive leveraged management by chaebols (debt ratios were typically 300-400%), collusion between politics and business, poor risk management by financial institutions, and the immaturity of the foreign exchange market all played a part. When the crisis hit, foreign capital left all at once, revealing the bottom of foreign exchange reserves.
 
-IMF는 구제금융의 조건으로 고금리 정책, 기업 구조조정, 금융 개혁을 요구했습니다. 그 결과 수많은 기업이 부도 처리되었고, 실업률은 7%를 넘어섰습니다. 대우그룹, 한보, 기아, 삼미 등 대기업들이 줄줄이 무너졌습니다. 국민들은 "금 모으기 운동"으로 외환 위기 극복에 참여했고, 이 과정은 한국인의 집단 기억에 깊이 각인되었습니다.
+As a condition for the bailout, the IMF demanded high interest rate policies, corporate restructuring, and financial reform. As a result, numerous companies went bankrupt, and the unemployment rate exceeded 7%. Large conglomerates such as Daewoo Group, Hanbo, Kia, and Sammi collapsed one after another. Citizens participated in the "Gold Collection Movement" to overcome the foreign exchange crisis, and this process became deeply engraved in the collective memory of Koreans.
 
-한국 투자자에게 IMF 사태는 특별한 교훈을 줍니다. 첫째, 환율 리스크의 중요성입니다. 해외 자산에 투자할 때 환율 변동은 수익률에 결정적 영향을 미칩니다. 둘째, 과도한 빚(레버리지)은 기업이든 개인이든 위기 상황에서 치명적입니다. 셋째, 위기 이후의 구조적 변화에서 기회가 탄생합니다. IMF 이후 삼성전자, SK하이닉스, 현대자동차 등은 글로벌 경쟁력을 갖춘 기업으로 거듭났습니다.`
+The IMF crisis provides special lessons for Korean investors. First, the importance of exchange rate risk. When investing in overseas assets, exchange rate fluctuations have a decisive impact on returns. Second, excessive debt (leverage) is fatal in a crisis situation, whether for companies or individuals. Third, opportunities arise from structural changes after a crisis. Since the IMF crisis, companies like Samsung Electronics, SK Hynix, and Hyundai Motor have been reborn as companies with global competitiveness.`
     },
     {
         id: 6,
-        title: '존버(HODL)의 심리학: 왜 우리는 손해를 참지 못하는가',
+        title: 'The Psychology of HODL: Why We Can\'t Stand Losses',
         date: '2026-02-19',
-        content: `"존버"—장기투자를 뜻하는 한국 투자 은어—는 쉬워 보이지만, 실제로 실천하기 가장 어려운 투자 전략 중 하나입니다. 그 이유는 인간의 심리 본능에 있습니다. 행동경제학(Behavioral Finance)의 연구들은 투자자들이 합리적으로 행동하지 못하는 이유를 과학적으로 밝혀냈습니다.
+        content: `"HODL"—a slang term for holding assets for the long term—seems easy, but practically, it is one of the hardest investment strategies to practice. The reason lies in human psychological instincts. Studies in Behavioral Finance have scientifically revealed why investors fail to act rationally.
 
-대표적인 것이 "손실 회피 편향(Loss Aversion)"입니다. 노벨 경제학상을 수상한 다니엘 카너먼(Daniel Kahneman)의 연구에 따르면, 인간은 같은 금액의 이익보다 손실에서 약 2배의 고통을 느낍니다. 100만 원을 벌었을 때의 기쁨보다, 100만 원을 잃었을 때의 고통이 2배 더 크다는 것입니다. 이 때문에 투자자들은 손실을 빨리 확정 짓고 싶어하며, 주가가 조금만 하락해도 패닉 매도를 하는 경향이 있습니다.
+A representative example is "Loss Aversion." According to research by Nobel Prize laureate Daniel Kahneman, humans feel about twice as much pain from a loss as they do pleasure from a gain of the same amount. The pain of losing $1,000 is twice as great as the joy of earning $1,000. Because of this, investors want to lock in losses quickly and tend to panic sell even if stock prices fall slightly.
 
-또 다른 함정은 "현재 편향(Present Bias)"입니다. 인간의 뇌는 미래의 큰 보상보다 현재의 작은 보상을 선호하도록 설계되어 있습니다. "3년 후에 200% 수익"보다 "당장 눈앞의 10% 수익"이 더 매력적으로 느껴지는 것이 바로 이 편향 때문입니다. 이는 진화적으로 합리적이었지만(당장의 위험을 피해야 생존할 수 있었으므로), 투자에는 독이 됩니다. 주식 시장의 장기 수익률은 연평균 7~10%로, 복리 효과가 축적되려면 최소 5~10년은 걸리기 때문입니다.
+Another trap is "Present Bias." The human brain is designed to prefer small immediate rewards over large future rewards. "10% profit right now" feels more attractive than "200% profit in 3 years" because of this bias. This was evolutionarily rational (avoiding immediate danger was necessary for survival), but it is poison for investing. The long-term return of the stock market is 7-10% annually, and it takes at least 5-10 years for the compound interest effect to accumulate.
 
-"확증 편향(Confirmation Bias)"도 위험합니다. 자신이 보유한 종목에 대한 부정적인 뉴스는 무시하고, 긍정적인 뉴스만 선택적으로 수용하는 경향입니다. "이 주식은 반드시 오를 거야"라는 믿음이 형성되면, 객관적인 판단이 어려워집니다. 반대로, 한번 매도한 종목이 오르면 "나는 운이 나쁜 사람"이라고 생각하며 다시 매수하는 것도 이 편향의 연장입니다.
+"Confirmation Bias" is also dangerous. It is the tendency to ignore negative news about stocks one owns and selectively accept only positive news. Once the belief that "this stock will definitely go up" is formed, objective judgment becomes difficult. Conversely, if a stock sold once goes up, thinking "I am an unlucky person" and buying it again is also an extension of this bias.
 
-존버를 성공적으로 실천하기 위한 전략은 다음과 같습니다. 첫째, 투자 일지를 작성하여 매매 시점과 그 이유를 기록합니다. 둘째, 차트를 매일 확인하지 않습니다(확인 빈도와 패닉 매도 확률은 정비례합니다). 셋째, 분할 매수 전략으로 매수 타이밍에 대한 스트레스를 줄입니다. 넷째, 감정이 아닌 시스템에 기반한 매매 규칙을 세워둡니다.`
+Strategies for successfully practicing HODL are as follows. First, write an investment journal to record the timing and reasons for buying and selling. Second, do not check the charts every day (checking frequency and panic selling probability are directly proportional). Third, reduce stress about timing with a split buying strategy. Fourth, set up trading rules based on a system, not emotions.`
     },
     {
         id: 7,
-        title: '공포와 탐욕 지수: 시장 심리를 읽는 법',
+        title: 'Fear and Greed Index: How to Read Market Sentiment',
         date: '2026-02-26',
-        content: `"다른 사람들이 탐욕스러울 때 두려워하고, 다른 사람들이 두려워할 때 탐욕스러워져라." 워런 버핏의 이 유명한 격언은 투자의 본질을 꿰뚫고 있습니다. 그렇다면 시장의 공포와 탐욕 수준을 어떻게 측정할 수 있을까요?
+        content: `"Be fearful when others are greedy, and greedy when others are fearful." This famous quote by Warren Buffett penetrates the essence of investing. So how can we measure the level of market fear and greed?
 
-CNN이 개발한 "Fear & Greed Index(공포와 탐욕 지수)"는 7가지 지표를 종합하여 시장 심리를 0(극도의 공포)에서 100(극도의 탐욕)까지의 숫자로 표현합니다. 이 7가지 지표는 다음과 같습니다: (1) 시장 모멘텀(S&P 500 vs 125일 이동평균), (2) 주가 강도(52주 신고가 vs 신저가 종목 수), (3) 주가 폭(상승종목 거래량 vs 하락종목 거래량), (4) 풋/콜 옵션 비율, (5) 정크본드 수요(투자등급 vs 하이일드 스프레드), (6) 시장 변동성(VIX), (7) 안전자산 수요(주식 vs 국채 수익률 차이).
+CNN's "Fear & Greed Index" compiles 7 indicators to express market sentiment as a number from 0 (extreme fear) to 100 (extreme greed). These 7 indicators are: (1) Market Momentum (S&P 500 vs 125-day moving average), (2) Stock Price Strength (52-week highs vs lows), (3) Stock Price Breadth (trading volume of rising vs falling stocks), (4) Put/Call Options Ratio, (5) Junk Bond Demand (investment grade vs high yield spread), (6) Market Volatility (VIX), and (7) Safe Haven Demand (difference between stock vs bond yields).
 
-역사적으로 보면, 극도의 공포 구간(25 이하)에서 매수한 투자자들은 이후 1년간 평균 20% 이상의 수익을 올렸습니다. 반대로 극도의 탐욕 구간(75 이상)에서 매수한 투자자들은 이후 수개월간 조정받는 경우가 많았습니다. 2020년 3월 코로나 폭락 시 이 지수는 2까지 떨어졌고, 2021년 밈 주식(GameStop) 열풍 시 95까지 치솟았습니다.
+Historically, investors who bought in the extreme fear zone (below 25) earned average returns of more than 20% over the next year. Conversely, investors who bought in the extreme greed zone (above 75) often faced corrections in the following months. During the Covid crash in March 2020, this index fell to 2, and during the meme stock (GameStop) craze in 2021, it soared to 95.
 
-그러나 이 지수를 맹목적으로 따르는 것은 위험합니다. 극도의 공포가 더 깊은 공포로 이어질 수 있고, 탐욕이 더 큰 탐욕으로 발전하는 경우도 흔합니다. 이 지수는 "시점"을 정확히 알려주지 못하며, "방향"에 대한 힌트만 제공합니다.
+However, following this index blindly is dangerous. Extreme fear can lead to deeper fear, and greed often develops into greater greed. This index does not tell you the exact "timing" and only provides a hint about the "direction."
 
-실전에서는 다음과 같이 활용할 수 있습니다. 지수가 극도의 공포 영역에 있을 때 분할 매수를 시작하고, 극도의 탐욕 영역에 있을 때 일부 차익을 실현합니다. 핵심은 "시장 반대편에 서는 용기"를 수치화된 데이터로 뒷받침하는 것입니다. 감정이 아닌 데이터에 기반한 결정이 장기적으로 더 좋은 성과를 만들어냅니다. 또한 VIX(변동성 지수)도 함께 참고하면 더욱 정교한 판단이 가능합니다. VIX가 30 이상이면 시장이 불안한 상태, 40 이상이면 극도의 불안 상태로 볼 수 있습니다.`
+In practice, it can be used as follows. Start split buying when the index is in the extreme fear zone, and realize some profits when it is in the extreme greed zone. The key is to back up the "courage to stand on the opposite side of the market" with quantified data. Decisions based on data rather than emotions produce better results in the long run. Also, referring to the VIX (Volatility Index) together allows for more sophisticated judgment. If VIX is over 30, the market is unstable; if over 40, it can be seen as extremely unstable.`
     },
     {
         id: 8,
-        title: '분산투자의 과학: "계란을 한 바구니에 담지 마라"의 진짜 의미',
+        title: 'The Science of Diversification: The True Meaning of "Don\'t Put All Your Eggs in One Basket"',
         date: '2026-03-05',
-        content: `"계란을 한 바구니에 담지 마라." 투자의 가장 기본적인 격언 중 하나이지만, 많은 투자자들이 이 원칙을 제대로 실천하지 못하고 있습니다. 단순히 여러 종목을 사는 것이 분산투자가 아니기 때문입니다. 해리 마코위츠(Harry Markowitz)는 포트폴리오 이론으로 노벨 경제학상을 수상했는데, 그의 핵심 통찰은 "자산 간의 상관관계"가 분산투자의 핵심이라는 것이었습니다.
+        content: `"Don't put all your eggs in one basket." It is one of the most basic adages of investing, but many investors fail to practice this principle properly. Simply buying multiple stocks is not diversification. Harry Markowitz won the Nobel Prize in Economics for Modern Portfolio Theory, and his key insight was that "correlation between assets" is the core of diversification.
 
-예를 들어, 삼성전자와 SK하이닉스에 분산 투자했다면 진정한 분산이 아닙니다. 두 종목 모두 반도체 산업에 속해 있어, 산업 전체가 불황일 때 동시에 하락합니다. 진정한 분산투자는 서로 다른 방향으로 움직이는 자산을 조합하는 것입니다. 예컨대, 기술주 + 헬스케어 + 소비재 + 경기방어주처럼 다양한 섹터에 분산하거나, 주식 + 채권 + 금 + 부동산(REITs)처럼 자산군 자체를 분산하는 것이 효과적입니다.
+For example, investing in both Samsung Electronics and SK Hynix is not true diversification. Both stocks belong to the semiconductor industry, so they fall together when the entire industry is in a recession. True diversification is combining assets that move in different directions. For example, it is effective to diversify across various sectors like Technology + Healthcare + Consumer Goods + Defensive Stocks, or to diversify asset classes themselves like Stocks + Bonds + Gold + Real Estate (REITs).
 
-상관관계의 중요성을 구체적으로 설명하면 이렇습니다. 두 자산의 상관계수가 +1이면 완전히 같은 방향으로 움직이므로 분산 효과가 없습니다. 0이면 서로 무관하게 움직이므로 어느 정도 분산 효과가 있습니다. -1이면 완전히 반대로 움직이므로 이론적으로 완벽한 헤지(hedge)가 가능합니다. 주식과 채권의 상관관계는 역사적으로 -0.2 ~ -0.5 수준이어서, 전통적인 60/40 포트폴리오(주식 60%, 채권 40%)가 오래도록 사랑받은 이유입니다.
+Specifically explaining the importance of correlation: If the correlation coefficient between two assets is +1, they move in completely the same direction, so there is no diversification effect. If 0, they move independently, so there is some diversification effect. If -1, they move completely oppositely, so theoretically perfect hedging is possible. The correlation between stocks and bonds has historically been around -0.2 to -0.5, which is why the traditional 60/40 portfolio (60% stocks, 40% bonds) has been loved for a long time.
 
-그러나 2022년처럼 주식과 채권이 동시에 하락하는 해도 있습니다. 이는 인플레이션이 치솟으면서 연준이 급격히 금리를 인상했기 때문입니다. 이런 환경에서는 전통적인 분산도 효과가 줄어듭니다. 따라서 금(Gold), 원자재, 해외 부동산 등 추가적인 자산군으로 분산의 폭을 넓히는 것이 현대 포트폴리오 이론의 진화된 형태입니다.
+However, there are years like 2022 when stocks and bonds fall simultaneously. This is because the Fed raised interest rates sharply as inflation soared. In such an environment, traditional diversification becomes less effective. Therefore, expanding the breadth of diversification with additional asset classes such as Gold, commodities, and overseas real estate is the evolved form of modern portfolio theory.
 
-개인 투자자를 위한 실용적 가이드는 다음과 같습니다. 우선 ETF를 활용하면 소액으로도 글로벌 분산이 가능합니다. S&P 500 ETF(SPY), 국제주식 ETF(VXUS), 채권 ETF(AGG), 금 ETF(GLD)에 각각 40/20/30/10으로 배분하면 상당히 견고한 포트폴리오가 됩니다. 그리고 6개월~1년에 한 번 리밸런싱(원래 비율로 재조정)을 하면 "싸게 사고 비싸게 파는" 효과가 자동으로 발생합니다.`
+A practical guide for individual investors is as follows. First, using ETFs allows for global diversification even with small amounts. Allocating 40/20/30/10 to S&P 500 ETF (SPY), International Stock ETF (VXUS), Bond ETF (AGG), and Gold ETF (GLD) respectively makes for a fairly solid portfolio. And rebalancing (readjusting to original ratios) once every 6 months to 1 year automatically produces the effect of "buy low, sell high."`
     },
     {
         id: 9,
-        title: '인플레이션과 주식시장: 돈의 가치가 떨어질 때 투자 전략',
+        title: 'Inflation and the Stock Market: Investment Strategies When Money Loses Value',
         date: '2026-03-12',
-        content: `인플레이션(물가 상승)은 투자자의 적입니다. 같은 100만 원이 10년 전과 지금의 구매력이 다르듯, 인플레이션은 "보이지 않는 세금"처럼 자산의 실질 가치를 꾸준히 갉아먹습니다. 연간 3%의 인플레이션이 20년간 지속되면, 현재 1,000만 원의 실질 구매력은 약 554만 원으로 줄어듭니다. 절반 가까이가 사라지는 것입니다.
+        content: `Inflation (rising prices) is the enemy of the investor. Just as purchasing power of the same 1 million won is different from 10 years ago, inflation steadily eats away at the real value of assets like an "invisible tax." If 3% annual inflation continues for 20 years, the real purchasing power of the current 10 million won decreases to about 5.54 million won. Nearly half disappears.
 
-2021~2022년 미국의 인플레이션은 40년 만에 최고치인 9.1%(2022년 6월 CPI 기준)를 기록했습니다. 코로나 이후 대규모 양적완화와 재정지출, 공급망 병목, 우크라이나-러시아 전쟁으로 인한 에너지·식량 가격 급등이 원인이었습니다. 연방준비제도는 기준금리를 0.25%에서 5.25%까지 급격히 인상하며 인플레이션 억제에 나섰고, 이 과정에서 주식과 채권 모두 큰 타격을 받았습니다.
+In 2021-2022, US inflation recorded a 40-year high of 9.1% (based on June 2022 CPI). Massive quantitative easing and fiscal spending after Corona, supply chain bottlenecks, and soaring energy and food prices due to the Ukraine-Russia war were the causes. The Federal Reserve raised the benchmark interest rate sharply from 0.25% to 5.25% to curb inflation, and both stocks and bonds were hit hard in the process.
 
-역사적으로 보면, 주식은 장기적으로 인플레이션을 이기는 자산입니다. 기업은 제품 가격을 올려 인플레이션을 전가할 수 있고, 매출과 이익이 명목상 증가하기 때문입니다. 1926년부터 2023년까지 미국 주식의 연평균 명목 수익률은 약 10.2%이고, 같은 기간 인플레이션은 약 3%였으므로, 실질 수익률은 약 7%에 달합니다. 은행 예금이나 현금보다 훨씬 효과적인 인플레이션 방어 수단입니다.
+Historically, stocks are an asset that beats inflation in the long run. Because companies can raise product prices to pass on inflation, and sales and profits increase in nominal terms. From 1926 to 2023, the average annual nominal return of US stocks was about 10.2%, and since inflation was about 3% during the same period, the real return reaches about 7%. It is a much more effective inflation defense than bank deposits or cash.
 
-그러나 단기적으로는 이야기가 다릅니다. 인플레이션이 급등하는 시기에는 중앙은행의 금리 인상이 주식 시장에 부정적 영향을 미칩니다. 높은 금리는 기업의 대출 비용을 증가시키고, 미래 현금흐름의 현재 가치(할인율)를 낮추며, 투자자들을 높은 이자를 주는 채권이나 예금으로 끌어들입니다. 특히 고성장 테크 주식들은 금리 상승에 가장 민감하게 반응합니다.
+However, the story is different in the short term. In times of soaring inflation, central bank interest rate hikes have a negative impact on the stock market. High interest rates increase corporate borrowing costs, lower the present value (discount rate) of future cash flows, and attract investors to bonds or deposits that pay high interest. In particular, high-growth tech stocks react most sensitively to rising interest rates.
 
-인플레이션 시대의 투자 전략은 다음과 같습니다. 첫째, 가격 결정력(Pricing Power)이 있는 기업에 투자합니다. 코카콜라, 애플처럼 제품 가격을 올려도 수요가 줄지 않는 기업들이 인플레이션기에 강합니다. 둘째, TIPS(물가연동국채)를 포트폴리오에 포함시킵니다. 셋째, 부동산(REITs)과 원자재 관련 자산을 배분합니다. 넷째, 현금 비중을 과도하게 높이지 않습니다. 인플레이션 환경에서 현금은 가장 빠르게 가치가 하락하는 자산입니다.`
+The investment strategy in the era of inflation is as follows. First, invest in companies with Pricing Power. Companies like Coca-Cola and Apple, whose demand does not decrease even if product prices are raised, are strong in inflationary periods. Second, include TIPS (Treasury Inflation-Protected Securities) in your portfolio. Third, allocate real estate (REITs) and commodity-related assets. Fourth, do not increase cash weighting excessively. In an inflationary environment, cash is the asset whose value falls the fastest.`
     },
     {
         id: 10,
-        title: '장기투자 멘탈 관리법: 10년 뒤의 나에게 투자하기',
+        title: 'Mental Management for Long-term Investing: Investing in Your Future Self',
         date: '2026-03-19',
-        content: `주식 투자에서 성공하기 위해 가장 중요한 것은 뛰어난 분석력이나 타이밍 감각이 아닙니다. 바로 "멘탈 관리"입니다. 피터 린치(Peter Lynch)는 이렇게 말했습니다: "주식 시장에서 가장 중요한 기관은 뇌가 아니라 위장이다. 폭락에도 주식을 잡고 있을 수 있는 배짱이 필요하다." 실제로 피델리티(Fidelity)의 내부 연구에 따르면, 가장 수익률이 좋았던 계좌는 주인이 사망하거나, 계좌의 존재를 잊어버린 경우였습니다. 인간의 개입이 없을수록 성과가 좋았다는 아이러니입니다.
+        content: `Currently, the most important thing to succeed in stock investing is not superior analytical skills or timing sense. It is "mental management." Peter Lynch said, "The most important organ in the stock market is not the brain, but the stomach. You need the guts to hold onto stocks even in a crash." In fact, according to Fidelity's internal research, the accounts with the best returns were those where the owner had died or had forgotten about the existence of the account. It is ironic that performance was better with less human intervention.
 
-멘탈 관리의 첫 번째 원칙은 "잃어도 괜찮은 돈으로만 투자하라"입니다. 당장 생활비나 비상 자금으로 쓸 돈을 주식에 넣으면, 조금만 빠져도 조바심이 생기고 공포에 매도하게 됩니다. 최소 6개월에서 1년치 생활비는 예금으로 확보한 뒤, 나머지 여유 자금으로 투자해야 여유 있는 마음으로 시장을 대할 수 있습니다.
+The first principle of mental management is "Invest only with money you can afford to lose." If you put money you need for immediate living expenses or emergency funds into stocks, you will get impatient even if it drops a little and sell in fear. You should secure at least 6 months to 1 year of living expenses in deposits and invest with the remaining surplus funds to deal with the market with a relaxed mind.
 
-두 번째 원칙은 "시간을 이 편에 놓아라"입니다. S&P 500의 역사를 보면, 1년 보유 시 수익을 올릴 확률은 약 73%, 5년 보유 시 약 87%, 15년 이상 보유 시 거의 100%에 가깝습니다. 시장이 단기적으로 어떻게 움직이든, 장기적으로 상승하는 경향은 역사적 사실입니다. 인류의 경제는 기술 혁신, 인구 증가, 생산성 향상을 통해 장기적으로 성장해 왔고, 주식 시장은 이를 반영합니다.
+The second principle is "Put time on your side." Looking at the history of the S&P 500, the probability of making a profit when holding for 1 year is about 73%, about 87% for 5 years, and close to 100% for more than 15 years. No matter how the market moves in the short term, the tendency to rise in the long term is a historical fact. The human economy has grown in the long term through technological innovation, population growth, and productivity improvement, and the stock market reflects this.
 
-세 번째 원칙은 "나만의 투자 원칙을 세우고 문서화하라"입니다. "이 종목이 30% 빠지면 어떻게 할 것인가?" "목표 수익률에 도달하면 어떻게 할 것인가?" 이런 시나리오를 미리 정해두지 않으면, 감정이 격앙된 순간에 충동적인 결정을 내리게 됩니다. 투자 일지를 쓰면서 매매의 이유와 감정 상태를 기록하면, 시간이 지남에 따라 자신의 투자 패턴을 객관적으로 파악할 수 있습니다.
+The third principle is "Establish your own investment principles and document them." "What will I do if this stock drops 30%?" "What will I do if I reach my target return?" If you don't decide on these scenarios in advance, you will make impulsive decisions in moments of heightened emotion. Recording the reasons for trading and emotional state in an investment journal allows you to objectively identify your investment patterns over time.
 
-네 번째 원칙은 "소음을 차단하라"입니다. 유튜브 주식 채널, SNS의 투자 의견, 증권사 리포트 알림까지, 현대인은 하루에도 수십 개의 투자 관련 정보에 노출됩니다. 이 정보들의 99%는 장기 투자 성과에 아무런 영향을 미치지 않는 소음입니다. "이번 주 어닝 서프라이즈!", "긴급! 매도 신호!" 같은 자극적인 헤드라인에 일희일비하면 멘탈만 소모됩니다. 분기 보고서를 한 번 확인하는 정도면 충분합니다.
+The fourth principle is "Block out the noise." YouTube stock channels, investment opinions on social media, brokerage report notifications... modern people are exposed to dozens of investment-related pieces of information a day. 99% of this information is noise that has no impact on long-term investment performance. Getting excited or depressed by provocative headlines like "Earnings Surprise This Week!", "Urgent! Sell Signal!" only consumes your mental energy. Checking quarterly reports once is enough.
 
-마지막으로, "복리의 마법을 믿으라"입니다. 아인슈타인이 "복리는 세계 8번째 불가사의"라고 말했다는 일화는 유명합니다. 연 10%의 수익률로 매월 50만 원씩 30년간 투자하면, 원금 1억 8,000만 원이 약 10억 원이 됩니다. 복리의 마법은 시간이 길수록 폭발적으로 작용합니다. 하지만 이 마법이 작동하려면, 도중에 패닉 매도로 복리의 사슬을 끊어서는 안 됩니다. 멘탈 관리는 결국 "복리를 지키는 싸움"이라고 할 수 있습니다.`
+Finally, "Believe in the magic of compounding." The anecdote that Einstein called compounding "the eighth wonder of the world" is famous. If you invest 500,000 won every month for 30 years at a 10% annual return, the principal of 180 million won becomes about 1 billion won. The magic of compounding works explosively as time gets longer. However, for this magic to work, you must not break the chain of compounding with panic selling along the way. Mental management can ultimately be called a "fight to protect compounding."`
     },
     {
         id: 11,
-        title: '대공황 (1929): 자본주의 역사상 최악의 시나리오',
+        title: 'The Great Depression (1929): The Worst Scenario in Capitalist History',
         date: '2026-03-26',
-        content: `1929년 발생한 대공황(Great Depression)은 현대 경제사에서 가장 중요하고 파괴적인 사건으로 꼽힙니다. "포효하는 20년대(Roaring Twenties)"라 불리던 1920년대 미국은 유례없는 경제 호황을 누렸습니다. 라디오, 자동차, 냉장고가 보급되고 주식 시장은 끝없이 오를 것만 같았습니다. 사람들은 빚을 내어(마진 거래) 주식을 샀고, 기업들은 과잉 생산을 지속했습니다.
+        content: `The Great Depression that occurred in 1929 is considered the most important and destructive event in modern economic history. The US in the 1920s, called "The Roaring Twenties," enjoyed an unprecedented economic boom. Radios, cars, and refrigerators became common, and the stock market seemed like it would rise endlessly. People borrowed money (margin trading) to buy stocks, and companies continued overproduction.
 
-그러나 1929년 10월 24일 '검은 목요일(Black Thursday)'과 10월 29일 '검은 화요일(Black Tuesday)'에 시장은 붕괴했습니다. 다우존스 지수는 고점 대비 89%나 폭락했고, 1929년 381포인트였던 지수는 1932년 41포인트까지 떨어졌습니다. 이 하락폭을 회복하는 데는 무려 25년이 걸렸습니다(1954년 회복).
+However, on October 24, 1929, 'Black Thursday', and October 29, 'Black Tuesday', the market collapsed. The Dow Jones index plunged 89% from its peak, falling from 381 points in 1929 to 41 points in 1932. It took a whopping 25 years to recover this loss (recovered in 1954).
 
-대공황은 단순한 주가 폭락을 넘어 실물 경제를 파괴했습니다. 은행 뱅크런(대량 인출 사태)으로 인해 9,000개 이상의 은행이 파산했고, 미국 실업률은 25%까지 치솟았습니다. 길거리는 실직자들로 넘쳐났고, 무료 급식소 앞에는 긴 줄이 이어졌습니다. 이 충격은 전 세계로 퍼져 유럽 경제를 무너뜨렸고, 결국 제2차 세계대전의 원인 중 하나가 되었습니다.
+The Great Depression went beyond a simple stock market crash and destroyed the real economy. Due to bank runs (mass withdrawals), more than 9,000 banks went bankrupt, and the US unemployment rate soared to 25%. Streets were overflowing with unemployed people, and long lines formed in front of soup kitchens. This shock spread worldwide, collapsing the European economy, and eventually became one of the causes of World War II.
 
-이 사건이 주는 교훈은 명확합니다. 첫째, 과도한 레버리지(빚)는 파멸의 지름길입니다. 대공황 당시 많은 투자자들이 10%의 증거금만으로 주식을 샀다가, 주가가 조금만 떨어져도 반대매매(마진콜)를 당해 전 재산을 잃었습니다. 둘째, "이번엔 다르다"는 말은 가장 위험한 말입니다. 어빙 피셔 교수가 "주가는 영구적으로 높은 고원에 도달했다"고 선언한 직후 폭락이 시작된 것은 유명한 일화입니다. 셋째, 정부와 중앙은행의 역할입니다. 당시 연준의 긴축 정책과 정부의 보호무역주의(스무트-홀리 관세법)가 위기를 키웠다는 반성으로, 이후 거시경제 정책은 크게 발전했습니다.`
+The lessons this event teaches are clear. First, excessive leverage (debt) is a shortcut to ruin. During the Great Depression, many investors bought stocks with only 10% margin, but lost their entire fortunes due to margin calls when stock prices fell even slightly. Second, "This time is different" are the most dangerous words. It is a famous anecdote that Irving Fisher declared "Stock prices have reached what looks like a permanently high plateau" just before the crash began. Third, the role of government and central banks. Reflecting on the fact that the Fed's tight monetary policy and the government's protectionism (Smoot-Hawley Tariff Act) at the time exacerbated the crisis, macroeconomic policy has since developed significantly.`
     },
     {
         id: 12,
-        title: '게임스탑(GME) 사태 (2021): 개미들의 반란',
+        title: 'The GameStop (GME) Saga (2021): The Revolt of the Retail Investors',
         date: '2026-04-02',
-        content: `2021년 1월, 월스트리트 역사상 가장 기이하고 드라마틱한 사건이 발생했습니다. 비디오 게임 소매업체 '게임스탑(GameStop)'의 주식을 두고, 개인 투자자(개미)들과 거대 헤지펀드 간의 전면전이 벌어진 것입니다.
+        content: `In January 2021, one of the most bizarre and dramatic events in Wall Street history occurred. An all-out war broke out between individual investors (retail) and giant hedge funds over the stock of video game retailer 'GameStop'.
 
-사건의 발단은 온라인 커뮤니티 레딧(Reddit)의 'WallStreetBets' 게시판이었습니다. 멜빈 캐피털(Melvin Capital) 등 헤지펀드들이 게임스탑의 주가 하락에 과도한 공매도(Short Selling)를 걸어놓았다는 사실이 알려지자, 개인 투자자들은 "헤지펀드를 파산시키자"며 조직적인 매수 운동을 벌였습니다.
+The incident began on the 'WallStreetBets' board of the online community Reddit. When it became known that hedge funds like Melvin Capital had placed excessive short selling bets on GameStop's stock price decline, individual investors launched an organized buying campaign saying, "Let's bankrupt the hedge funds."
 
-그 결과는 충격적이었습니다. 2021년 초 17달러 수준이던 주가는 며칠 만에 483달러까지 치솟았습니다. 무려 2,700%의 상승이었습니다. 공매도를 쳤던 헤지펀드들은 주가가 오를수록 더 큰 손실을 막기 위해 주식을 되사야 하는 '숏 스퀴즈(Short Squeeze)' 상황에 몰렸고, 이는 주가를 더욱 폭등시키는 연료가 되었습니다. 멜빈 캐피털은 결국 수조 원의 손실을 입고 구제금융을 받아야 했습니다.
+The result was shocking. The stock price, which was around $17 in early 2021, soared to $483 in just a few days. It was a rise of a whopping 2,700%. Hedge funds that had shorted were driven into a 'Short Squeeze' situation where they had to buy back stocks to prevent further losses as the stock price rose, which became fuel driving the stock price even higher. Melvin Capital eventually suffered trillions of won in losses and had to receive a bailout.
 
-이 사건은 금융 시장의 민주화와 소셜 미디어의 힘을 보여주었지만, 동시에 투기적 광기의 위험성도 드러냈습니다. 펀더멘털(기업 실적)과 무관하게 수급만으로 주가가 폭등한 상태는 오래갈 수 없었습니다. 이후 주가는 다시 급락하여 고점에 매수한 많은 개인 투자자들이 큰 손실을 입기도 했습니다. 또한 로빈후드 등 증권사가 매수 버튼을 비활성화하면서 시장의 불공정성에 대한 논란도 뜨거웠습니다.
+This event demonstrated the democratization of financial markets and the power of social media, but at the same time, it revealed the dangers of speculative madness. A state where stock prices skyrocket solely due to supply and demand, regardless of fundamentals (corporate performance), could not last long. Since then, the stock price has plunged again, and many individual investors who bought at the high have suffered large losses. Also, as brokerages like Robinhood disabled the buy button, controversy over market unfairness heated up.
 
-GME 사태의 교훈: 시장은 때때로 비이성적이며, 이 비이성적인 상태는 예상보다 오래갈 수 있습니다. 공매도는 이론적으로 손실이 무한대일 수 있는 위험한 전략임을 상기시켜 주었습니다. 또한 군중 심리에 휩쓸린 투자는 도박과 다르지 않음을 명심해야 합니다.`
+Lessons from the GME Saga: The market is sometimes irrational, and this irrational state can last longer than expected. It reminded us that short selling is theoretically a dangerous strategy where losses can be infinite. Also, one must keep in mind that investing swept up in herd mentality is no different from gambling.`
     },
     {
         id: 13,
-        title: '플래시 크래시 (2010): 36분간 증발한 1조 달러',
+        title: 'The Flash Crash (2010): $1 Trillion Evaporated in 36 Minutes',
         date: '2026-04-09',
-        content: `2010년 5월 6일 오후 2시 32분, 평온하던 미국 증시가 갑자기 미친 듯이 추락하기 시작했습니다. 다우존스 지수는 불과 몇 분 만에 998.5포인트(약 9%) 폭락했습니다. P&G 같은 우량주가 순식간에 30% 폭락했고, 액센츄어(Accenture) 주가는 1센트($0.01)에 거래되기도 했습니다. 그리고 더욱 놀랍게도, 시장은 20분 만에 대부분의 낙폭을 회복했습니다. 이 사건을 '플래시 크래시(Flash Crash)'라고 부릅니다.
+        content: `On May 6, 2010, at 2:32 PM, the peaceful US stock market suddenly began to crash madly. The Dow Jones index plunged 998.5 points (about 9%) in just a few minutes. Blue chips like P&G plunged 30% in an instant, and Accenture stock traded at 1 cent ($0.01). And even more surprisingly, the market recovered most of the losses in 20 minutes. This event is called the 'Flash Crash'.
 
-원인은 놀랍게도 한 명의 개인과 알고리즘의 결합이었습니다. 영국 런던의 교외에 사는 트레이더 '나빈더 싱 사라오'가 주범으로 지목되었습니다. 그는 허수 주문(실제로 체결시킬 의도 없이 주문만 넣어 호가를 조작하는 행위)을 통해 시장을 교란시켰고, 이에 반응한 초고빈도 매매(HFT) 알고리즘들이 서로 매도 물량을 쏟아내며 연쇄 폭락을 일으킨 것입니다.
+The cause was surprisingly a combination of one individual and an algorithm. Trader 'Navinder Singh Sarao' living in the suburbs of London was identified as the culprit. He disrupted the market through fake orders (placing orders without intent to execute to manipulate quotes), and High-Frequency Trading (HFT) algorithms reacting to this poured out sell orders, causing a chain crash.
 
-사라오가 사용한 '스푸핑(Spoofing)' 전략은 시장의 유동성을 말려버렸습니다. 매수 주문이 사라진 상태에서 알고리즘들의 매도 주문만 쏟아지자 가격은 자유낙하했습니다. 이 사건은 현대 금융 시장이 알고리즘과 컴퓨터에 얼마나 깊이 의존하고 있는지, 그리고 그 시스템이 얼마나 취약할 수 있는지를 적나라하게 보여주었습니다.
+The 'Spoofing' strategy used by Sarao dried up market liquidity. With buy orders gone, as algorithmic sell orders poured out, prices went into freefall. This event demonstrated how deeply modern financial markets rely on algorithms and computers, and how vulnerable that system can be.
 
-교훈: 기술의 발전은 거래 비용을 낮추고 효율성을 높였지만, 새로운 형태의 리스크도 가져왔습니다. 투자자들은 "손절매(Stop-loss)" 주문을 맹신해서는 안 된다는 것을 배웠습니다. 플래시 크래시 당시 시장가 매도(Market Sell)로 설정된 손절매 주문들은 터무니없는 가격(예: 1센트)에 체결되어 막대한 손실을 확정 지었기 때문입니다. 때로는 아무것도 하지 않고 폭풍이 지나가기를 기다리는 것이 최선일 수 있습니다.`
+Lesson: Technological advancement has lowered trading costs and increased efficiency, but it has also brought new forms of risk. Investors learned not to blindly trust "Stop-loss" orders. During the Flash Crash, stop-loss orders set to Market Sell were executed at absurd prices (e.g., 1 cent), locking in massive losses. Sometimes doing nothing and waiting for the storm to pass may be the best option.`
     },
     {
         id: 14,
-        title: '일본 자산가격 버블 붕괴 (1990): 잃어버린 30년의 시작',
+        title: 'Burst of Japan\'s Asset Price Bubble (1990): The Beginning of the Lost 30 Years',
         date: '2026-04-16',
-        content: `1980년대 후반, 일본 경제는 세계를 호령했습니다. "도쿄 황궁의 땅값이 미국 캘리포니아 전체 땅값보다 비싸다"는 말이 나올 정도로 부동산과 주식 시장은 과열되어 있었습니다. 1989년 12월 29일, 닛케이 225 지수는 사상 최고치인 38,915포인트를 기록했습니다. 기업들은 넘쳐나는 돈으로 전 세계의 자산을 사들였고, 일본 국민들은 영원한 번영을 믿었습니다.
+        content: `In the late 1980s, the Japanese economy dominated the world. The real estate and stock markets were so overheated that it was said, "The land value of the Imperial Palace in Tokyo is more expensive than all the land in California, USA." On December 29, 1989, the Nikkei 225 index recorded an all-time high of 38,915 points. Companies bought assets around the world with overflowing money, and the Japanese people believed in eternal prosperity.
 
-그러나 1990년 새해가 밝자마자 거품은 터졌습니다. 일본 중앙은행의 금리 인상과 대출 총량 규제가 트리거가 되었습니다. 주식 시장은 폭락하기 시작했고, 부동산 시장도 뒤따라 무너졌습니다. 2009년 3월 닛케이 지수는 7,054포인트까지 떨어져, 고점 대비 80% 이상 하락했습니다. 더욱 충격적인 것은, 이 고점을 다시 회복하는 데 무려 34년(2024년 회복)이 걸렸다는 사실입니다.
+However, as soon as the new year of 1990 dawned, the bubble burst. The Bank of Japan's interest rate hike and total loan volume regulations were the triggers. The stock market began to crash, and the real estate market followed suit. In March 2009, the Nikkei index fell to 7,054 points, dropping more than 80% from its peak. Even more shocking is the fact that it took a whopping 34 years (recovered in 2024) to recover this high again.
 
-이후 일본은 "잃어버린 30년"이라 불리는 장기 디플레이션과 경제 침체의 늪에 빠졌습니다. 자산 가치 하락으로 가계와 기업은 소비와 투자를 줄이고 빚 갚기에만 몰두했고(대차대조표 불황), 이는 다시 경제를 위축시키는 악순환을 낳았습니다.
+Since then, Japan has fallen into a swamp of long-term deflation and economic stagnation called the "Lost 30 Years." Due to the decline in asset values, households and companies reduced consumption and investment and focused only on paying off debts (balance sheet recession), which in turn created a vicious cycle of shrinking the economy again.
 
-일본의 사례는 "부동산 불패 신화"나 "우량주는 언젠가 오른다"는 믿음이 틀릴 수 있음을 가장 극적으로 보여줍니다. 국가 경제 전체가 구조적인 문제(인구 고령화, 좀비 기업 등)에 직면하면 주식 시장도 수십 년간 침체할 수 있습니다. 이는 특정 국가에만 올인하는 투자가 얼마나 위험한지, 왜 글로벌 분산 투자가 필요한지를 역설적으로 증명합니다.`
+Japan's case most dramatically demonstrates that beliefs such as "real estate invincibility myth" or "blue chips always go up eventually" can be wrong. If a national economy faces structural problems (population aging, zombie companies, etc.), the stock market can stagnate for decades. This paradoxically proves how dangerous it is to go all-in on a specific country and why global diversified investment is necessary.`
     },
     {
         id: 15,
-        title: '니프티 피프티(Nifty Fifty) 버블 (1970s): "한 번 사면 영원히"',
+        title: 'Nifty Fifty Bubble (1970s): "One Decision Stocks"',
         date: '2026-04-23',
-        content: `1960년대 후반에서 70년대 초반, 미국 기관 투자자들은 "한 번 사두면 영원히 걱정 없는" 50개의 우량주에 집중 투자했습니다. 코카콜라, 맥도날드, IBM, 폴라로이드, 디즈니 같은 기업들이었습니다. 이들을 '니프티 피프티(Nifty Fifty, 아주 멋진 50개)'라고 불렀습니다.
+        content: `In the late 1960s and early 70s, US institutional investors focused their investments on 50 blue-chip stocks that were "worry-free forever once bought." Companies like Coca-Cola, McDonald's, IBM, Polaroid, and Disney. They were called the 'Nifty Fifty'.
 
-투자자들은 이 기업들의 성장성을 너무나 확신한 나머지, 가격(Valuation)을 무시했습니다. 폴라로이드의 주가수익비율(PER)은 90배, 맥도날드는 80배, 디즈니는 70배를 넘었습니다. 시장 평균 PER가 15~20배 수준이었음을 감안하면 엄청난 고평가였습니다. "아무리 비싸게 사도 성장하니까 괜찮다"는 논리였습니다.
+Investors were so convinced of the growth potential of these companies that they ignored Valuation. Polaroid's Price-to-Earnings Ratio (PER) exceeded 90 times, McDonald's 80 times, and Disney 70 times. Considering that the market average PER was around 15-20 times, it was a huge overvaluation. The logic was, "It's okay to buy expensive because they are growing."
 
-하지만 1973년 오일 쇼크와 함께 약세장이 찾아오자, 이 거품은 처참하게 꺼졌습니다. 폴라로이드는 고점 대비 90% 하락했고, 에이본(Avon)은 85% 하락했습니다. 회사는 여전히 우량했고 돈을 잘 벌었지만, 주가가 너무 비쌌기 때문에 발생한 일이었습니다. 많은 종목들이 고점의 주가를 회복하는 데 10년 이상이 걸렸습니다.
+However, when a bear market arrived with the 1973 Oil Shock, this bubble burst disastrously. Polaroid fell 90% from its peak, and Avon fell 85%. The companies were still excellent and made good money, but it happened because the stock prices were too expensive. It took more than 10 years for many stocks to recover their peak prices.
 
-니프티 피프티 버블은 "좋은 기업이 반드시 좋은 주식은 아니다"라는 진리를 가르쳐 줍니다. 아무리 훌륭한 기업이라도 너무 비싼 가격에 사면 훌륭한 투자가 될 수 없습니다. 2020년대의 빅테크 투자 열풍 속에서도 우리가 잊지 말아야 할 교훈입니다. 가치평가(Valuation)를 무시한 투자는 결국 대가를 치르게 됩니다.`
+The Nifty Fifty bubble teaches the truth that "a good company is not necessarily a good stock." No matter how great a company is, if you buy it at too expensive a price, it cannot be a great investment. It is a lesson we must not forget even amidst the Big Tech investment craze of the 2020s. Investing that ignores Valuation eventually pays the price.`
     }
 ];
 
@@ -206,10 +206,10 @@ const Blog = () => {
         return (
             <div className="min-h-screen bg-slate-950 text-slate-300 font-sans antialiased">
                 <div className="max-w-3xl mx-auto px-6 py-16">
-                    <button onClick={() => setSelectedArticle(null)} className="text-cyan-400 text-sm hover:underline mb-8 inline-block">&larr; 목록으로 돌아가기</button>
+                    <button onClick={() => setSelectedArticle(null)} className="text-cyan-400 text-sm hover:underline mb-8 inline-block">&larr; Back to List</button>
                     <article>
                         <h1 className="text-2xl md:text-3xl font-black text-white mb-2">{article.title}</h1>
-                        <p className="text-slate-500 text-sm mb-8">{article.date} · Stock Rollercoaster 투자 인사이트</p>
+                        <p className="text-slate-500 text-sm mb-8">{article.date} · Stock Rollercoaster Investment Insights</p>
                         <div className="prose prose-invert prose-sm max-w-none text-slate-400 leading-relaxed whitespace-pre-line">
                             {article.content}
                         </div>
@@ -225,9 +225,9 @@ const Blog = () => {
     return (
         <div className="min-h-screen bg-slate-950 text-slate-300 font-sans antialiased">
             <div className="max-w-3xl mx-auto px-6 py-16">
-                <Link to="/" className="text-cyan-400 text-sm hover:underline mb-8 inline-block">&larr; 홈으로 돌아가기</Link>
-                <h1 className="text-3xl font-black text-white mb-2">📊 투자 인사이트</h1>
-                <p className="text-slate-500 text-sm mb-10">Investment Insights · 과거의 교훈에서 미래의 투자 전략을 배웁니다.</p>
+                <Link to="/" className="text-cyan-400 text-sm hover:underline mb-8 inline-block">&larr; Back to Home</Link>
+                <h1 className="text-3xl font-black text-white mb-2">📊 Investment Insights</h1>
+                <p className="text-slate-500 text-sm mb-10">Investment Insights · Learning future investment strategies from past lessons.</p>
 
                 <div className="space-y-6">
                     {articles.map((article, index) => (
