@@ -103,6 +103,8 @@ export interface LookParams {
   /** Direct on-camera flash: center hot spot, falloff, cooler light. 0..1. */
   flash: number;
 
+  /** Optional film accidents and lens filters, each 0..1. */
+  effects?: FilmEffects;
   grain: {
     amount: number;
     /** Grain cell size relative to frame height, ×1000. ISO 100 ≈ 0.6, ISO 800 ≈ 1.4. */
@@ -110,6 +112,17 @@ export interface LookParams {
     /** 0 = monochrome grain, 1 = fully per-channel color grain. */
     color: number;
   };
+}
+
+export interface FilmEffects {
+  /** Light leak: orange/red fogging from one edge, different on every frame. */
+  leak?: number;
+  /** Dust specks and scratches from scanning. */
+  dust?: number;
+  /** Cross-screen (star) filter: rays from bright lights. */
+  star?: number;
+  /** Prism held in front of the lens: a rainbow ghost along one side. */
+  prism?: number;
 }
 
 export type Situation =
@@ -179,6 +192,10 @@ export interface DevelopOptions {
    * Looks nearly identical at screen size and costs roughly a third of the GPU time.
    */
   fast?: boolean;
+  /** Overrides look.effects (the camera's effect switches). */
+  fx?: FilmEffects;
+  /** Seed for effect placement (light-leak shape, dust). Change per frame. */
+  fxSeed?: number;
 }
 
 /**

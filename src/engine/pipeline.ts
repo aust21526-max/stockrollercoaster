@@ -195,6 +195,13 @@ export class FilmRenderer {
       gl.uniform1f(u('uGrainSize'), look.grain.size);
       gl.uniform1f(u('uGrainColor'), look.grain.color);
       gl.uniform1f(u('uStrength'), opts.strength);
+      const fx = opts.fx ?? look.effects ?? {};
+      gl.uniform1f(u('uLeak'), fx.leak ?? 0);
+      gl.uniform1f(u('uDust'), fx.dust ?? 0);
+      gl.uniform1f(u('uStar'), fx.star ?? 0);
+      gl.uniform1f(u('uPrism'), fx.prism ?? 0);
+      gl.uniform1f(u('uFxSeed'), (opts.fxSeed ?? opts.seed) % 997);
+      gl.uniform1i(u('uFast'), opts.fast ? 1 : 0);
       gl.uniform4fv(u('uCrop'), crop);
       this.draw();
     }

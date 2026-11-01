@@ -1,6 +1,7 @@
 import { analyzeScene, labCorrection } from '../engine/analyze';
 import { FilmRenderer } from '../engine/pipeline';
-import { cropFor, type FilmProfile } from '../engine/types';
+import { cropFor, type FilmEffects, type FilmProfile } from '../engine/types';
+import { drawFrame, type FrameInfo } from './frames';
 
 /** Long-side cap for developed photos. Keeps iPhone memory in check. */
 const MAX_OUTPUT = 4096;
@@ -29,6 +30,12 @@ export interface DevelopRequest {
   strength?: number;
   /** Burned in after developing, or null. */
   stamp: ((g: CanvasRenderingContext2D, w: number, h: number) => void) | null;
+  /** Effect amounts (light leak, dust, star, prism). */
+  fx?: FilmEffects;
+  /** Same seed = same light-leak shape, so a re-develop keeps its accident. */
+  fxSeed?: number;
+  /** Print frame around the photo. */
+  frame?: FrameInfo;
 }
 
 export async function develop(req: DevelopRequest): Promise<{ blob: Blob; width: number; height: number }> {
@@ -54,6 +61,8 @@ export async function develop(req: DevelopRequest): Promise<{ blob: Blob; width:
       crop: crop.rect,
       ev: req.ev,
       flash: req.flash,
+      fx: req.fx,
+      fxSeed: req.fxSeed,
     },
     labCorrection(stats, req.profile.labWhiteBalance),
     w,
@@ -67,12 +76,15 @@ export async function develop(req: DevelopRequest): Promise<{ blob: Blob; width:
   g.drawImage(canvas, 0, 0);
   r.trim();
   req.stamp?.(g, w, h);
+  const framed = req.frame ? drawFrame(out, req.frame) : out;
 
   const blob = await new Promise<Blob>((resolve, reject) =>
-    out.toBlob((b) => (b ? resolve(b) : reject(new Error('사진을 저장하지 못했습니다.'))), 'image/jpeg', 0.92),
+    framed.toBlob((b) => (b ? resolve(b) : reject(new Error('사진을 저장하지 못했습니다.'))), 'image/jpeg', 0.92),
   );
+  const size = { width: framed.width, height: framed.height };
   out.width = out.height = 0;
-  return { blob, width: w, height: h };
+  if (framed !== out) framed.width = framed.height = 0;
+  return { blob, ...size };
 }
 
 /** Decode a photo file/blob upright (EXIF orientation applied). */

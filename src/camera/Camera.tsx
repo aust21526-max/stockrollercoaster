@@ -9,11 +9,13 @@ import { useBackClose } from '../back';
 import { CameraBag } from './CameraBag';
 import { CameraBody } from './CameraBody';
 import { Icon } from './icons';
-import { ddayCount, LENSES, MAIN_FOCAL, RATIOS, useSettings, type CameraSettings, type FlashMode } from './settings';
+import { ddayCount, EFFECTS, effectAmounts, LENSES, MAIN_FOCAL, RATIOS, useSettings, type CameraSettings, type FlashMode } from './settings';
+import { FRAME_LABELS, type FrameStyle } from './frames';
+import { pickVideoType } from './share';
 import { haptic, shutterSound } from './sound';
 import { drawStamp, stampText } from './stamp';
-import { Album, IMPORTED_ROLL, RollLoader } from './Album';
-import { deleteShot, exportShots, listRolls, listShots, newRoll, requestPersistence, rollState, rollVisible, saveRoll, saveShot, type Roll, type Shot } from './store';
+import { Album, CLIPS_ROLL, IMPORTED_ROLL, RollLoader } from './Album';
+import { deleteShot, exportShots, isFrame, listRolls, listShots, newRoll, requestPersistence, rollState, rollVisible, saveRoll, saveShot, stillOf, type Roll, type Shot } from './store';
 import { useCamera } from './useCamera';
 import './camera.css';
 
@@ -50,6 +52,11 @@ export default function Camera() {
   const [countdown, setCountdown] = useState(0);
   const [blink, setBlink] = useState(false);
   const [screenFlash, setScreenFlash] = useState(false);
+  const [fxSheet, setFxSheet] = useState(false);
+  const [recording, setRecording] = useState<{ length: number } | null>(null);
+  const recordingRef = useRef(false);
+  /** Set when a recording starts: the preview jumps back to full resolution first. */
+  const fullResRef = useRef(false);
   const [sheet, setSheet] = useState(false);
   const [viewer, setViewer] = useState<{ ids: string[]; index: number } | null>(null);
   const [rolls, setRolls] = useState<Roll[]>([]);
@@ -60,6 +67,7 @@ export default function Camera() {
   const [bag, setBag] = useState<{ snapshot: HTMLCanvasElement | null } | null>(null);
   // System back closes the top overlay instead of leaving the app.
   useBackClose(sheet, () => setSheet(false));
+  useBackClose(fxSheet, () => setFxSheet(false));
   useBackClose(!!bag, () => setBag(null));
   useBackClose(album, () => setAlbum(false));
   useBackClose(!!loader, () => setLoader(null));
@@ -128,14 +136,26 @@ export default function Camera() {
       const now = performance.now();
       avg = avg * 0.9 + (now - last) * 0.1;
       last = now;
-      if (avg > 45 && scale > 0.5) scale = Math.max(0.5, scale - 0.05);
-      else if (avg < 36 && scale < 1) scale = Math.min(1, scale + 0.02);
+      if (fullResRef.current) {
+        scale = 1;
+        fullResRef.current = false;
+      }
+      // Never change the canvas size mid-recording: the recorder would glitch.
+      if (!recordingRef.current) {
+        if (avg > 45 && scale > 0.5) scale = Math.max(0.5, scale - 0.05);
+        else if (avg < 36 && scale < 1) scale = Math.min(1, scale + 0.02);
+      }
 
       const { settings: s, profile: p, digitalZoom: z, shaderEv, aspect } = live.current;
       const vw = video.videoWidth;
       const vh = video.videoHeight;
       r.setSource(video, vw, vh, false);
       const crop = cropFor(vw, vh, aspect, z);
+      const video8 = s.mode === 'video';
+      if (video8) {
+        // 8mm feel: the frame weaves in the gate, exposure flickers, grain and dust move.
+        crop.rect = [crop.rect[0] + (Math.random() - 0.5) * 0.004, crop.rect[1] + (Math.random() - 0.5) * 0.004, crop.rect[2], crop.rect[3]];
+      }
       const box = finder.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       let w = Math.round(box.width * dpr);
@@ -143,7 +163,23 @@ export default function Camera() {
       const k = Math.min(1, PREVIEW_MAX / Math.max(w, h), crop.width / w) * scale;
       w = Math.max(2, Math.round(w * k));
       h = Math.max(2, Math.round(h * k));
-      r.render(p.look, { labCorrection: s.labCorrection, strength: s.strength, seed: 7, crop: crop.rect, ev: shaderEv, flash: 0, fast: true }, correctionRef.current, w, h);
+      r.render(
+        p.look,
+        {
+          labCorrection: s.labCorrection,
+          strength: s.strength,
+          seed: video8 ? Math.floor(Math.random() * 997) : 7,
+          crop: crop.rect,
+          ev: shaderEv + (video8 ? (Math.random() - 0.5) * 0.08 : 0),
+          flash: 0,
+          fast: true,
+          fx: effectAmounts(s.fx, p.look.effects),
+          fxSeed: video8 ? Math.floor(now / 1000) * 7 + (Math.random() < 0.15 ? Math.random() * 50 : 0) : 42,
+        },
+        correctionRef.current,
+        w,
+        h,
+      );
     };
     // Render exactly once per camera frame where the browser supports it.
     if (video.requestVideoFrameCallback) {
@@ -211,7 +247,7 @@ export default function Camera() {
       setThumb('');
       return;
     }
-    const url = URL.createObjectURL(latestVisible.developed);
+    const url = URL.createObjectURL(stillOf(latestVisible));
     setThumb(url);
     return () => URL.revokeObjectURL(url);
   }, [latestVisible]);
@@ -250,7 +286,7 @@ export default function Camera() {
       frameAspect?: number,
       /** Date for the stamp when re-developing an older frame. */
       stampDate?: Date,
-      place?: { rollId?: string; frame?: number; reprint?: boolean },
+      place?: { rollId?: string; frame?: number; reprint?: boolean; fxSeed?: number },
     ) => {
       const takenAt = new Date();
       const stampAt = stampDate ?? takenAt;
@@ -259,6 +295,7 @@ export default function Camera() {
         try {
           const src = await getSource();
           const text = s.stamp === 'off' ? null : stampText(s.stamp, stampAt, ddayCount(s.ddayStart, stampAt));
+          const fxSeed = place?.fxSeed ?? Math.floor(Math.random() * 997);
           const res = await develop({
             source: src.source,
             width: src.width,
@@ -272,6 +309,9 @@ export default function Camera() {
             strength: s.strength,
             labCorrection: s.labCorrection,
             stamp: text ? (g, w, h) => drawStamp(g, text, w, h) : null,
+            fx: effectAmounts(s.fx, p.look.effects),
+            fxSeed,
+            frame: { style: s.frame, caption: s.caption, frameNo: place?.frame, filmName: p.name },
           });
           src.cleanup?.();
           const shot: Shot = {
@@ -296,6 +336,10 @@ export default function Camera() {
               frameAspect,
               strength: s.strength,
               takenAt: stampAt.getTime(),
+              fx: s.fx,
+              fxSeed,
+              frame: s.frame,
+              caption: s.caption,
             },
           };
           await saveShot(shot);
@@ -315,7 +359,21 @@ export default function Camera() {
   /** Develop a stored original again with another camera, keeping the frame's own settings. */
   const redevelop = useCallback(
     (shot: Shot, profileId: string) => {
-      const m = shot.meta as Partial<{ ratio: CameraSettings['ratio']; stamp: CameraSettings['stamp']; labCorrection: boolean; ev: number; flash: number; zoom: number; frameAspect: number; strength: number; takenAt: number }>;
+      const m = shot.meta as Partial<{
+        ratio: CameraSettings['ratio'];
+        stamp: CameraSettings['stamp'];
+        labCorrection: boolean;
+        ev: number;
+        flash: number;
+        zoom: number;
+        frameAspect: number;
+        strength: number;
+        takenAt: number;
+        fx: CameraSettings['fx'];
+        fxSeed: number;
+        frame: FrameStyle;
+        caption: string;
+      }>;
       const p = profileById(profileId);
       enqueueDevelop(
         async () => {
@@ -328,6 +386,9 @@ export default function Camera() {
           stamp: m.stamp ?? settings.stamp,
           labCorrection: m.labCorrection ?? settings.labCorrection,
           strength: m.strength ?? settings.strength,
+          fx: m.fx ?? settings.fx,
+          frame: m.frame ?? 'none',
+          caption: m.caption ?? '',
         },
         p,
         m.zoom ?? 1,
@@ -335,7 +396,7 @@ export default function Camera() {
         m.flash ?? 0,
         m.frameAspect,
         new Date(m.takenAt ?? shot.createdAt),
-        { rollId: shot.rollId, frame: shot.frame, reprint: true },
+        { rollId: shot.rollId, frame: shot.frame, reprint: true, fxSeed: m.fxSeed },
       );
       showToast(`${p.name} 필름으로 다시 현상하고 있어요.`);
     },
@@ -344,7 +405,7 @@ export default function Camera() {
 
   // ---- rolls ----
   const activeRoll = rolls.find((r) => !r.sentAt);
-  const framesTaken = useMemo(() => (activeRoll ? shots.filter((s) => s.rollId === activeRoll.id && !s.reprint).length : 0), [shots, activeRoll]);
+  const framesTaken = useMemo(() => (activeRoll ? shots.filter((s) => s.rollId === activeRoll.id && isFrame(s)).length : 0), [shots, activeRoll]);
   const live2 = useRef({ activeRoll, framesTaken });
   live2.current = { activeRoll, framesTaken };
 
@@ -442,13 +503,94 @@ export default function Camera() {
     );
   }, [cam, settings, profile, stats, digitalZoom, shaderEv, enqueueDevelop, claimFrame]);
 
+  // ---- video: a clip of exactly 3, 5 or 10 seconds, recorded from the film preview ----
+  const startRecording = useCallback(async () => {
+    const canvas = canvasRef.current;
+    if (!canvas || recordingRef.current) return;
+    const type = pickVideoType();
+    if (!type || !('captureStream' in canvas)) {
+      showToast('이 브라우저에서는 영상을 찍을 수 없어요.');
+      return;
+    }
+    const length = settings.clipLength;
+    const p = profile;
+    const s = settings;
+    // Full-resolution preview for the clip, then hold it there while recording.
+    fullResRef.current = true;
+    recordingRef.current = true;
+    await new Promise((res) => setTimeout(res, 120));
+    const stream = canvas.captureStream(24);
+    let mic: MediaStream | null = null;
+    if (s.clipSound) {
+      try {
+        mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mic.getAudioTracks().forEach((t) => stream.addTrack(t));
+      } catch {
+        showToast('마이크를 쓸 수 없어서 소리 없이 찍어요.');
+      }
+    }
+    let rec: MediaRecorder;
+    try {
+      rec = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 5_000_000 });
+    } catch (e) {
+      mic?.getTracks().forEach((t) => t.stop());
+      stream.getTracks().forEach((t) => t.stop());
+      recordingRef.current = false;
+      showToast(`영상을 찍지 못했습니다: ${(e as Error).message}`);
+      return;
+    }
+    const chunks: Blob[] = [];
+    rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+    const takenAt = new Date();
+    let poster: Blob | null = null;
+    setTimeout(() => canvas.toBlob((b) => (poster = b), 'image/jpeg', 0.86), 300);
+    rec.onstop = async () => {
+      mic?.getTracks().forEach((t) => t.stop());
+      stream.getVideoTracks().forEach((t) => t.stop());
+      recordingRef.current = false;
+      setRecording(null);
+      haptic(15);
+      if (s.sound) shutterSound();
+      const blob = new Blob(chunks, { type: type.split(';')[0] });
+      const shot: Shot = {
+        id: `${takenAt.getTime()}-${Math.random().toString(36).slice(2, 7)}`,
+        createdAt: takenAt.getTime(),
+        profileId: p.id,
+        width: canvas.width,
+        height: canvas.height,
+        developed: blob,
+        original: poster ?? blob,
+        poster: poster ?? undefined,
+        kind: 'video',
+        duration: length,
+        rollId: CLIPS_ROLL,
+        meta: { lens: s.lens, ratio: s.ratio, length, sound: s.clipSound },
+      };
+      try {
+        await saveShot(shot);
+        setShots((list) => [shot, ...list]);
+      } catch (e) {
+        showToast(`영상을 저장하지 못했습니다: ${(e as Error).message}`);
+      }
+    };
+    recordingRef.current = true;
+    setRecording({ length });
+    if (s.sound) shutterSound();
+    haptic(15);
+    rec.start(250);
+    // Exactly the chosen length; the shutter cannot cut it short.
+    setTimeout(() => rec.state !== 'inactive' && rec.stop(), length * 1000);
+  }, [settings, profile, showToast]);
+
   const onShutter = useCallback(() => {
+    if (recordingRef.current) return;
+    const action = settings.mode === 'video' ? startRecording : fire;
     if (countdown) {
       cancelTimer.current?.();
       return;
     }
     if (!settings.timer) {
-      fire();
+      action();
       return;
     }
     let n = settings.timer;
@@ -458,7 +600,7 @@ export default function Camera() {
       if (n <= 0) {
         clearInterval(id);
         setCountdown(0);
-        fire();
+        action();
       } else {
         setCountdown(n);
         haptic(6);
@@ -468,7 +610,7 @@ export default function Camera() {
       clearInterval(id);
       setCountdown(0);
     };
-  }, [countdown, settings.timer, fire]);
+  }, [countdown, settings.timer, settings.mode, fire, startRecording]);
 
   /** Photos from the system camera (iPhone full quality) or from the library. */
   const onFiles = async (files: FileList | null, fromCamera: boolean) => {
@@ -566,6 +708,8 @@ export default function Camera() {
   };
 
   const flashFires = flashAmount(settings.flash, profile, stats) > 0;
+  const fxNow = effectAmounts(settings.fx, profile.look.effects);
+  const fxOn = Object.values(fxNow).some((v) => (v ?? 0) > 0) || settings.frame !== 'none';
   const dday = ddayCount(settings.ddayStart);
   const stampPreview = settings.stamp === 'off' ? null : stampText(settings.stamp, new Date(), dday);
   const situations = useMemo(() => (stats ? detectSituations(stats, new Date().getHours()) : []), [stats]);
@@ -611,6 +755,9 @@ export default function Camera() {
         >
           {ratio.label}
         </button>
+        <button className={`chip ${fxOn ? 'is-lit' : ''}`} onClick={() => setFxSheet(true)} aria-label="효과와 프레임">
+          <Icon name="sparkle" />
+        </button>
         <button className="chip" onClick={() => update({ facing: settings.facing === 'environment' ? 'user' : 'environment' })} aria-label="전면·후면 전환">
           <Icon name="flip" />
         </button>
@@ -649,7 +796,13 @@ export default function Camera() {
           </div>
           <div className="counter" title="남은 컷">
             <span className="counter-mark" aria-hidden />
-            <span className="counter-num">{activeRoll ? String(Math.max(0, activeRoll.size - framesTaken - pendingFrames.current)).padStart(2, '0') : '--'}</span>
+            {recording ? (
+              <span className="counter-num rec">REC {recording.length}s</span>
+            ) : settings.mode === 'video' ? (
+              <span className="counter-num">{settings.clipLength}s</span>
+            ) : (
+              <span className="counter-num">{activeRoll ? String(Math.max(0, activeRoll.size - framesTaken - pendingFrames.current)).padStart(2, '0') : '--'}</span>
+            )}
           </div>
           {cam.state.status !== 'ready' && (
             <div className="finder-msg">
@@ -688,6 +841,24 @@ export default function Camera() {
         <EvDial value={settings.ev} onChange={(ev) => update({ ev })} />
       </div>
 
+      <div className="mode-row" role="radiogroup" aria-label="촬영 모드">
+        <button role="radio" aria-checked={settings.mode === 'photo'} className={settings.mode === 'photo' ? 'is-on' : ''} disabled={!!recording} onClick={() => update({ mode: 'photo' })}>
+          사진
+        </button>
+        <button role="radio" aria-checked={settings.mode === 'video'} className={settings.mode === 'video' ? 'is-on' : ''} disabled={!!recording} onClick={() => update({ mode: 'video' })}>
+          영상
+        </button>
+        {settings.mode === 'video' && (
+          <span className="clip-lengths" role="radiogroup" aria-label="영상 길이">
+            {([3, 5, 10] as const).map((n) => (
+              <button key={n} role="radio" aria-checked={settings.clipLength === n} className={settings.clipLength === n ? 'is-on' : ''} disabled={!!recording} onClick={() => update({ clipLength: n })}>
+                {n}초
+              </button>
+            ))}
+          </span>
+        )}
+      </div>
+
       <footer className="cam-bottom">
         <button className="last" onClick={() => setAlbum(true)} aria-label="앨범 열기">
           {activeRoll?.mode === 'wait' && framesTaken > 0 ? (
@@ -700,7 +871,13 @@ export default function Camera() {
           {rolls.some((r) => rollState(r) === 'developed' && !r.openedAt) && <span className="new-dot" aria-hidden />}
           {developing > 0 && <span className="developing">현상 중</span>}
         </button>
-        <button className={`shutter ${countdown ? 'is-timer' : ''}`} onClick={onShutter} disabled={cam.state.status !== 'ready'} aria-label={countdown ? '타이머 취소' : '셔터'} />
+        <button
+          className={`shutter ${countdown ? 'is-timer' : ''} ${settings.mode === 'video' ? 'is-video' : ''} ${recording ? 'is-rec' : ''}`}
+          style={recording ? ({ '--len': `${recording.length}s` } as React.CSSProperties) : undefined}
+          onClick={onShutter}
+          disabled={cam.state.status !== 'ready'}
+          aria-label={recording ? `녹화 중, ${recording.length}초` : countdown ? '타이머 취소' : settings.mode === 'video' ? `${settings.clipLength}초 영상 찍기` : '셔터'}
+        />
         <button className="bag-btn" onClick={openBag} aria-label="카메라 가방 열기">
           <Icon name="bag" />
           <span>가방</span>
@@ -750,6 +927,7 @@ export default function Camera() {
           }}
         />
       )}
+      {fxSheet && <FxSheet settings={settings} update={update} cameraDefaults={profile.look.effects} cameraName={profile.name} onClose={() => setFxSheet(false)} />}
       {loader && <RollLoader reason={loader.reason} onLoad={loadRoll} onClose={() => setLoader(null)} />}
       {viewer && (
         <Viewer
@@ -810,6 +988,73 @@ function CameraStrip({ current, recommended, onPick }: { current: string; recomm
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function FxSheet({
+  settings,
+  update,
+  cameraDefaults,
+  cameraName,
+  onClose,
+}: {
+  settings: CameraSettings;
+  update: (p: Partial<CameraSettings>) => void;
+  cameraDefaults?: import('../engine/types').FilmEffects;
+  cameraName: string;
+  onClose: () => void;
+}) {
+  return (
+    <div className="sheet-backdrop" onClick={onClose}>
+      <section className="sheet" role="dialog" aria-label="효과와 프레임" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-head">
+          <h2>효과와 프레임</h2>
+          <button className="text" onClick={onClose}>닫기</button>
+        </div>
+        <div className="group">
+          <h3>필름 효과</h3>
+          {EFFECTS.map((e) => {
+            const mode = settings.fx[e.key] ?? 'auto';
+            const def = cameraDefaults?.[e.key] ?? 0;
+            return (
+              <div className="fx-row" key={e.key}>
+                <span>
+                  {e.label}
+                  <small>{e.hint}</small>
+                </span>
+                <div className="seg small" role="radiogroup" aria-label={e.label}>
+                  {(['auto', 'on', 'off'] as const).map((m) => (
+                    <button key={m} role="radio" aria-checked={mode === m} className={mode === m ? 'is-on' : ''} onClick={() => update({ fx: { ...settings.fx, [e.key]: m } })}>
+                      {m === 'auto' ? (def > 0 ? `${cameraName} 기본(켬)` : `${cameraName} 기본(끔)`) : m === 'on' ? '켜기' : '끄기'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="group">
+          <h3>인화 프레임</h3>
+          <div className="seg" role="radiogroup" aria-label="인화 프레임">
+            {(Object.keys(FRAME_LABELS) as FrameStyle[]).map((f) => (
+              <button key={f} role="radio" aria-checked={settings.frame === f} className={settings.frame === f ? 'is-on' : ''} onClick={() => update({ frame: f })}>
+                {FRAME_LABELS[f]}
+              </button>
+            ))}
+          </div>
+          {settings.frame === 'instant' && (
+            <label className="row">
+              <span>문구</span>
+              <input className="caption-input" value={settings.caption} maxLength={28} placeholder="예: 우리의 첫 여름" onChange={(e) => update({ caption: e.target.value })} />
+            </label>
+          )}
+          <p className="sheet-note">프레임은 저장되는 사진에 들어가요. 뷰파인더에는 보이지 않아요.</p>
+        </div>
+        <div className="group">
+          <Toggle label="영상에 소리 넣기" hint="켜면 처음 한 번 마이크 권한을 물어봐요." on={settings.clipSound} onChange={(v) => update({ clipSound: v })} />
+        </div>
+      </section>
     </div>
   );
 }
@@ -991,7 +1236,14 @@ function Viewer({
   }, []); // run once: jump to the tapped frame
   const [compare, setCompare] = useState<string | null>(null);
   const urls = useMemo(() => shots.map((s) => URL.createObjectURL(s.developed)), [shots]);
-  useEffect(() => () => urls.forEach((u) => URL.revokeObjectURL(u)), [urls]);
+  const posters = useMemo(() => shots.map((s) => (s.kind === 'video' && s.poster ? URL.createObjectURL(s.poster) : '')), [shots]);
+  useEffect(
+    () => () => {
+      urls.forEach((u) => URL.revokeObjectURL(u));
+      posters.forEach((u) => u && URL.revokeObjectURL(u));
+    },
+    [urls, posters],
+  );
   const shot = shots[Math.min(index, shots.length - 1)];
   useEffect(() => {
     if (!shots.length) onClose();
@@ -1042,13 +1294,17 @@ function Viewer({
             <div
               className="viewer-photo"
               style={{ aspectRatio: `${shots[i].width} / ${shots[i].height}` }}
-              onPointerDown={i === index ? startCompare : undefined}
+              onPointerDown={i === index && shots[i].kind !== 'video' ? startCompare : undefined}
               onPointerUp={endCompare}
               onPointerLeave={endCompare}
               onPointerCancel={endCompare}
               onContextMenu={(e) => e.preventDefault()}
             >
-              <img src={u} alt="" loading={i < 3 ? 'eager' : 'lazy'} draggable={false} />
+              {shots[i].kind === 'video' ? (
+                <video src={u} poster={posters[i] || undefined} controls playsInline loop preload="metadata" />
+              ) : (
+                <img src={u} alt="" loading={i < 3 ? 'eager' : 'lazy'} draggable={false} />
+              )}
               {compare && i === index && (
                 <>
                   <img className="viewer-original" src={compare} alt="" draggable={false} style={{ transform: `scale(${(shots[i].meta as { zoom?: number }).zoom ?? 1})` }} />
@@ -1059,10 +1315,10 @@ function Viewer({
           </div>
         ))}
       </div>
-      <p className="viewer-hint">사진을 길게 누르면 원본과 비교할 수 있어요.</p>
+      <p className="viewer-hint">{shot.kind === 'video' ? `${shot.duration ?? ''}초 필름 영상` : '사진을 길게 누르면 원본과 비교할 수 있어요.'}</p>
       <div className="viewer-actions">
-        <button onClick={() => exportShots([shot])}>사진 앱에 저장</button>
-        <button onClick={() => setPicking(true)}>다시 현상</button>
+        <button onClick={() => exportShots([shot])}>{shot.kind === 'video' ? '영상 저장' : '사진 앱에 저장'}</button>
+        {shot.kind !== 'video' && <button onClick={() => setPicking(true)}>다시 현상</button>}
         <button
           className="danger"
           onClick={() => {
