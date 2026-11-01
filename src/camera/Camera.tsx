@@ -492,6 +492,41 @@ export default function Camera() {
     showToast(fromCamera ? '기본 카메라 사진을 현상하고 있어요.' : `${files.length}장에 ${profile.name} 필름을 입히고 있어요.`);
   };
 
+  // ---- swipe the viewfinder to change cameras ----
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  const [nameFlash, setNameFlash] = useState<{ name: string; film: string; key: number } | null>(null);
+  useEffect(() => {
+    if (!nameFlash) return;
+    const t = setTimeout(() => setNameFlash(null), 1300);
+    return () => clearTimeout(t);
+  }, [nameFlash]);
+  const switchCamera = (step: number) => {
+    const i = PROFILES.findIndex((p) => p.id === profile.id);
+    const next = PROFILES[(i + step + PROFILES.length) % PROFILES.length];
+    update({ profileId: next.id });
+    setSuggest(null);
+    setNameFlash({ name: next.name, film: next.film, key: Date.now() });
+    haptic(6);
+  };
+  const onFinderDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    swipeStart.current = { x: e.clientX, y: e.clientY };
+  };
+  const onFinderUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const s0 = swipeStart.current;
+    swipeStart.current = null;
+    if (s0) {
+      const dx = e.clientX - s0.x;
+      const dy = e.clientY - s0.y;
+      // A clear horizontal swipe changes camera; anything shorter is a tap to focus.
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        switchCamera(dx < 0 ? 1 : -1);
+        return;
+      }
+      if (Math.hypot(dx, dy) > 12) return;
+    }
+    onFinderTap(e);
+  };
+
   const onFinderTap = (e: React.PointerEvent<HTMLDivElement>) => {
     const box = e.currentTarget.getBoundingClientRect();
     const x = (e.clientX - box.left) / box.width;
@@ -584,7 +619,9 @@ export default function Camera() {
           className={`cam-finder ${settings.facing === 'user' ? 'is-mirror' : ''}`}
           ref={finderRef}
           style={{ '--a': ratio.aspect } as React.CSSProperties}
-          onPointerUp={onFinderTap}
+          onPointerDown={onFinderDown}
+          onPointerUp={onFinderUp}
+          onPointerCancel={() => (swipeStart.current = null)}
         >
           <canvas ref={canvasRef} />
           {settings.grid && <div className="grid" aria-hidden />}
@@ -593,6 +630,12 @@ export default function Camera() {
           )}
           {focus && <div key={focus.key} className="focus" style={{ left: `${focus.x * 100}%`, top: `${focus.y * 100}%` }} aria-hidden />}
           {blink && <div className="blink" aria-hidden />}
+          {nameFlash && (
+            <div key={nameFlash.key} className="name-flash" aria-live="polite">
+              <strong>{nameFlash.name}</strong>
+              <span>{nameFlash.film}</span>
+            </div>
+          )}
           {countdown > 0 && <div className="countdown">{countdown}</div>}
           <div className="finder-info" aria-hidden>
             {flashFires && <span className="led">⚡</span>}

@@ -24,13 +24,55 @@ export function CameraBag({
   onClose: () => void;
 }) {
   const [focus, setFocus] = useState(current);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const pick = (id: string) => {
-    setFocus(id);
-    // Bring the preview back into view so the change is seen.
+  const stripRef = useRef<HTMLDivElement>(null);
+  const focusIndex = PROFILES.findIndex((p) => p.id === focus);
+
+  /** Center a camera in the strip; the scroll handler then focuses it. */
+  const scrollTo = (i: number, smooth = true) => {
+    const el = stripRef.current?.children[i] as HTMLElement | undefined;
+    if (!el) return;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    rootRef.current?.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+    el.scrollIntoView({ inline: 'center', block: 'nearest', behavior: smooth && !reduce ? 'smooth' : 'auto' });
   };
+  // Start with the camera in hand centered.
+  useEffect(() => scrollTo(PROFILES.findIndex((p) => p.id === current), false), []);
+
+  /** Whichever camera sits in the middle of the strip is the one previewed. */
+  const onStripScroll = () => {
+    const strip = stripRef.current;
+    if (!strip) return;
+    const mid = strip.scrollLeft + strip.clientWidth / 2;
+    let best = 0;
+    let dist = Infinity;
+    Array.from(strip.children).forEach((c, i) => {
+      const el = c as HTMLElement;
+      const d = Math.abs(el.offsetLeft + el.offsetWidth / 2 - mid);
+      if (d < dist) {
+        dist = d;
+        best = i;
+      }
+    });
+    const id = PROFILES[best].id;
+    if (id !== focus) {
+      setFocus(id);
+      navigator.vibrate?.(4);
+    }
+  };
+
+  // Swipe the photo itself to step through cameras.
+  const swipe = useRef<{ x: number; y: number } | null>(null);
+  const onHeroDown = (e: React.PointerEvent) => (swipe.current = { x: e.clientX, y: e.clientY });
+  const onHeroUp = (e: React.PointerEvent) => {
+    const s0 = swipe.current;
+    swipe.current = null;
+    if (!s0) return;
+    const dx = e.clientX - s0.x;
+    const dy = e.clientY - s0.y;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const next = Math.min(PROFILES.length - 1, Math.max(0, focusIndex + (dx < 0 ? 1 : -1)));
+    scrollTo(next);
+  };
+
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const profile = profileById(focus);
 
@@ -71,11 +113,12 @@ export function CameraBag({
     .map(([s]) => SITUATION_LABELS[s]);
 
   return (
-    <div className="bag" role="dialog" aria-label="카메라 고르기" ref={rootRef}>
-      <section className="bag-hero">
-        {previews[focus] ? <img key={focus} className="bag-photo" src={previews[focus]} alt={`${profile.name}로 본 지금 장면`} /> : <div className="bag-photo is-empty" />}
+    <div className="bag" role="dialog" aria-label="카메라 고르기">
+      <section className="bag-hero" onPointerDown={onHeroDown} onPointerUp={onHeroUp} onPointerCancel={() => (swipe.current = null)}>
+        {previews[focus] ? <img key={focus} className="bag-photo" src={previews[focus]} alt={`${profile.name}로 본 지금 장면`} draggable={false} /> : <div className="bag-photo is-empty" />}
         <div className="bag-hero-shade" />
         <button className="bag-close" onClick={onClose}>닫기</button>
+        <span className="bag-count">{focusIndex + 1}/{PROFILES.length}</span>
         <div className="bag-hero-text">
           <p className="bag-film">
             <span>{profile.film} 느낌</span>
@@ -84,18 +127,27 @@ export function CameraBag({
           <h2>{profile.name}</h2>
           <p className="bag-tagline">{profile.tagline}</p>
         </div>
-        <CameraBody profileId={focus} className="bag-hero-body" />
       </section>
 
-      <section className="bag-detail">
-        <p>
-          <span className="bag-label">잘 어울려요</span>
-          {best.join(', ')}
-        </p>
-        <p>
-          <span className="bag-label">피해 주세요</span>
-          {profile.avoid}
-        </p>
+      <section className="bag-panel">
+        <div className="bag-strip" ref={stripRef} onScroll={onStripScroll} aria-label="가방 속 카메라">
+          {PROFILES.map((p, i) => (
+            <button key={p.id} className={`slot ${p.id === focus ? 'is-focus' : ''}`} aria-pressed={p.id === focus} aria-label={p.name} onClick={() => scrollTo(i)}>
+              <CameraBody profileId={p.id} className="slot-body" />
+              <span className="slot-meta">{p.id === current ? '들고 있음' : recommended.includes(p.id) ? '추천' : ''}</span>
+            </button>
+          ))}
+        </div>
+        <div className="bag-detail">
+          <p>
+            <span className="bag-label">잘 어울려요</span>
+            {best.join(', ')}
+          </p>
+          <p>
+            <span className="bag-label">피해 주세요</span>
+            {profile.avoid}
+          </p>
+        </div>
         <button
           className="bag-pick"
           onClick={() => {
@@ -105,18 +157,6 @@ export function CameraBag({
         >
           {focus === current ? '이 카메라로 계속 찍기' : `${profile.name} 들기`}
         </button>
-      </section>
-
-      <section className="bag-slots" aria-label="가방 속 카메라">
-        {PROFILES.map((p) => (
-          <button key={p.id} className={`slot ${p.id === focus ? 'is-focus' : ''}`} aria-pressed={p.id === focus} onClick={() => pick(p.id)}>
-            <CameraBody profileId={p.id} className="slot-body" />
-            <span className="slot-name">{p.name}</span>
-            <span className="slot-meta">
-              {p.id === current ? '지금 들고 있음' : recommended.includes(p.id) ? '지금 장면에 추천' : `ISO ${p.iso}`}
-            </span>
-          </button>
-        ))}
       </section>
     </div>
   );
