@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { analyzeScene, labCorrection, type SceneStats } from '../engine/analyze';
 import { makeCurve } from '../engine/curves';
 import { FilmRenderer } from '../engine/pipeline';
-import { PROFILES, profileById } from '../engine/profiles';
+import { applyOverrides, defaultLook, PROFILES, profileById } from '../engine/profiles';
 import { detectSituations, rankProfiles } from '../engine/recommend';
 import { SITUATION_LABELS, type LookParams } from '../engine/types';
 import { makeTestChart } from './testChart';
@@ -125,7 +125,7 @@ export default function Lab() {
 
   const photo = photos.find((p) => p.id === photoId) ?? photos[0];
   const profile = profileById(profileId);
-  const look = overrides[profileId] ?? profile.look;
+  const look = overrides[profileId] ?? defaultLook(profileId);
   const edited = !!overrides[profileId];
 
   const correction = useMemo(() => labCorrection(photo.stats, profile.labWhiteBalance), [photo, profile]);
@@ -142,7 +142,11 @@ export default function Lab() {
     return () => rendererRef.current?.dispose();
   }, []);
 
-  useEffect(() => saveOverrides(overrides), [overrides]);
+  useEffect(() => {
+    saveOverrides(overrides);
+    // The camera reads the same edits.
+    applyOverrides(overrides);
+  }, [overrides]);
   useEffect(() => setJson(JSON.stringify(look, null, 2)), [profileId, edited]);
 
   const render = useCallback(() => {
@@ -260,7 +264,7 @@ export default function Lab() {
   const applyJson = () => {
     try {
       const parsed = JSON.parse(json) as LookParams;
-      setLook({ ...profile.look, ...parsed });
+      setLook({ ...defaultLook(profileId), ...parsed });
       setJsonError('');
     } catch (e) {
       setJsonError(`JSON 형식이 올바르지 않습니다: ${(e as Error).message}`);
@@ -277,7 +281,9 @@ export default function Lab() {
     <div className="lab">
       <header className="lab-head">
         <h1>현상실</h1>
-        <p>필름을 사진에 맞춰 보며 조정하는 곳. 바꾼 값은 이 브라우저에 저장됩니다.</p>
+        <p>필름을 사진에 맞춰 보며 조정하는 곳. 바꾼 값은 이 기기의 카메라에도 그대로 적용됩니다.</p>
+        <a className="lab-link" href="#/match">실제 필름과 맞추기</a>
+        <a className="lab-link" href="#/">카메라로</a>
       </header>
 
       <aside className="lab-films" aria-label="필름 선택">

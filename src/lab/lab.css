@@ -92,3 +92,4 @@
   .lab-params { max-height: none; }
   .frame canvas { max-height: 60dvh; }
 }
+.lab-link { color: var(--text); font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }

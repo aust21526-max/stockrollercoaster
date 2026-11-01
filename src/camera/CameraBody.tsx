@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { profileById } from '../engine/profiles';
 
 /**
  * Illustrated camera bodies, one per film. Four body types drawn from the
@@ -43,7 +44,7 @@ function Lens({ id, cx, cy, r, metal }: { id: string; cx: number; cy: number; r:
 }
 
 export function CameraBody({ profileId, className }: { profileId: string; className?: string }) {
-  const d = DESIGNS[profileId] ?? DESIGNS.portrait400;
+  const d = DESIGNS[profileId] ?? DESIGNS[profileById(profileId).bodyOf ?? ''] ?? DESIGNS.portrait400;
   const id = useId().replace(/:/g, '');
   const defs = (
     <defs>

@@ -5,14 +5,17 @@ import { PROFILES, profileById } from '../engine/profiles';
 import { detectSituations, rankProfiles } from '../engine/recommend';
 import { cropFor, SITUATION_LABELS, type FilmProfile } from '../engine/types';
 import { decodeBlob, develop, grabFrame } from './develop';
+import { useBackClose } from '../back';
 import { CameraBag } from './CameraBag';
 import { CameraBody } from './CameraBody';
 import { Icon } from './icons';
-import { ddayCount, LENSES, MAIN_FOCAL, RATIOS, useSettings, type CameraSettings, type FlashMode } from './settings';
+import { ddayCount, EFFECTS, effectAmounts, LENSES, MAIN_FOCAL, RATIOS, useSettings, type CameraSettings, type FlashMode } from './settings';
+import { FRAME_LABELS, type FrameStyle } from './frames';
+import { pickVideoType } from './share';
 import { haptic, shutterSound } from './sound';
 import { drawStamp, stampText } from './stamp';
-import { Album, IMPORTED_ROLL, RollLoader } from './Album';
-import { deleteShot, exportShots, listRolls, listShots, newRoll, requestPersistence, rollState, rollVisible, saveRoll, saveShot, type Roll, type Shot } from './store';
+import { Album, CLIPS_ROLL, IMPORTED_ROLL, RollLoader } from './Album';
+import { deleteShot, exportShots, isFrame, listRolls, listShots, newRoll, requestPersistence, rollState, rollVisible, saveRoll, saveShot, stillOf, type Roll, type Shot } from './store';
 import { useCamera } from './useCamera';
 import './camera.css';
 
@@ -49,6 +52,11 @@ export default function Camera() {
   const [countdown, setCountdown] = useState(0);
   const [blink, setBlink] = useState(false);
   const [screenFlash, setScreenFlash] = useState(false);
+  const [fxSheet, setFxSheet] = useState(false);
+  const [recording, setRecording] = useState<{ length: number } | null>(null);
+  const recordingRef = useRef(false);
+  /** Set when a recording starts: the preview jumps back to full resolution first. */
+  const fullResRef = useRef(false);
   const [sheet, setSheet] = useState(false);
   const [viewer, setViewer] = useState<{ ids: string[]; index: number } | null>(null);
   const [rolls, setRolls] = useState<Roll[]>([]);
@@ -57,6 +65,13 @@ export default function Camera() {
   /** Frames shot but still developing, so frame numbers stay right during bursts. */
   const pendingFrames = useRef(0);
   const [bag, setBag] = useState<{ snapshot: HTMLCanvasElement | null } | null>(null);
+  // System back closes the top overlay instead of leaving the app.
+  useBackClose(sheet, () => setSheet(false));
+  useBackClose(fxSheet, () => setFxSheet(false));
+  useBackClose(!!bag, () => setBag(null));
+  useBackClose(album, () => setAlbum(false));
+  useBackClose(!!loader, () => setLoader(null));
+  useBackClose(!!viewer, () => setViewer(null));
   const [toast, setToast] = useState('');
   const [focus, setFocus] = useState<{ x: number; y: number; key: number } | null>(null);
   const [tilt, setTilt] = useState<number | null>(null);
@@ -65,13 +80,10 @@ export default function Camera() {
   const cancelTimer = useRef<(() => void) | null>(null);
 
   // ---- zoom: optical/sensor zoom where the camera exposes it, digital crop otherwise ----
-  const zoomWanted = settings.lens / MAIN_FOCAL;
-  const zoomCap = settings.facing === 'environment' ? cam.caps.zoom : undefined;
-  const hwZoom = zoomCap ? Math.min(Math.max(zoomWanted, zoomCap.min), zoomCap.max) : 1;
-  const digitalZoom = Math.max(1, zoomWanted / hwZoom);
-  useEffect(() => {
-    if (zoomCap && cam.state.status === 'ready') cam.apply({ zoom: hwZoom });
-  }, [hwZoom, zoomCap, cam.state.status]);
+  // Lens = digital crop, always. Phone hardware zoom changes the preview but
+  // full-resolution stills (ImageCapture) often ignore it, so a 50mm frame
+  // would be saved at 26mm. Cropping ourselves keeps preview and photo identical.
+  const digitalZoom = Math.max(1, settings.lens / MAIN_FOCAL);
 
   // ---- EV: hardware exposure compensation where available, the rest in the shader ----
   const evCap = cam.caps.exposureCompensation;
@@ -124,14 +136,26 @@ export default function Camera() {
       const now = performance.now();
       avg = avg * 0.9 + (now - last) * 0.1;
       last = now;
-      if (avg > 45 && scale > 0.5) scale = Math.max(0.5, scale - 0.05);
-      else if (avg < 36 && scale < 1) scale = Math.min(1, scale + 0.02);
+      if (fullResRef.current) {
+        scale = 1;
+        fullResRef.current = false;
+      }
+      // Never change the canvas size mid-recording: the recorder would glitch.
+      if (!recordingRef.current) {
+        if (avg > 45 && scale > 0.5) scale = Math.max(0.5, scale - 0.05);
+        else if (avg < 36 && scale < 1) scale = Math.min(1, scale + 0.02);
+      }
 
       const { settings: s, profile: p, digitalZoom: z, shaderEv, aspect } = live.current;
       const vw = video.videoWidth;
       const vh = video.videoHeight;
       r.setSource(video, vw, vh, false);
       const crop = cropFor(vw, vh, aspect, z);
+      const video8 = s.mode === 'video';
+      if (video8) {
+        // 8mm feel: the frame weaves in the gate, exposure flickers, grain and dust move.
+        crop.rect = [crop.rect[0] + (Math.random() - 0.5) * 0.004, crop.rect[1] + (Math.random() - 0.5) * 0.004, crop.rect[2], crop.rect[3]];
+      }
       const box = finder.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       let w = Math.round(box.width * dpr);
@@ -139,7 +163,23 @@ export default function Camera() {
       const k = Math.min(1, PREVIEW_MAX / Math.max(w, h), crop.width / w) * scale;
       w = Math.max(2, Math.round(w * k));
       h = Math.max(2, Math.round(h * k));
-      r.render(p.look, { labCorrection: s.labCorrection, strength: s.strength, seed: 7, crop: crop.rect, ev: shaderEv, flash: 0, fast: true }, correctionRef.current, w, h);
+      r.render(
+        p.look,
+        {
+          labCorrection: s.labCorrection,
+          strength: s.strength,
+          seed: video8 ? Math.floor(Math.random() * 997) : 7,
+          crop: crop.rect,
+          ev: shaderEv + (video8 ? (Math.random() - 0.5) * 0.08 : 0),
+          flash: 0,
+          fast: true,
+          fx: effectAmounts(s.fx, p.look.effects),
+          fxSeed: video8 ? Math.floor(now / 1000) * 7 + (Math.random() < 0.15 ? Math.random() * 50 : 0) : 42,
+        },
+        correctionRef.current,
+        w,
+        h,
+      );
     };
     // Render exactly once per camera frame where the browser supports it.
     if (video.requestVideoFrameCallback) {
@@ -207,7 +247,7 @@ export default function Camera() {
       setThumb('');
       return;
     }
-    const url = URL.createObjectURL(latestVisible.developed);
+    const url = URL.createObjectURL(stillOf(latestVisible));
     setThumb(url);
     return () => URL.revokeObjectURL(url);
   }, [latestVisible]);
@@ -246,7 +286,7 @@ export default function Camera() {
       frameAspect?: number,
       /** Date for the stamp when re-developing an older frame. */
       stampDate?: Date,
-      place?: { rollId?: string; frame?: number; reprint?: boolean },
+      place?: { rollId?: string; frame?: number; reprint?: boolean; fxSeed?: number },
     ) => {
       const takenAt = new Date();
       const stampAt = stampDate ?? takenAt;
@@ -255,6 +295,7 @@ export default function Camera() {
         try {
           const src = await getSource();
           const text = s.stamp === 'off' ? null : stampText(s.stamp, stampAt, ddayCount(s.ddayStart, stampAt));
+          const fxSeed = place?.fxSeed ?? Math.floor(Math.random() * 997);
           const res = await develop({
             source: src.source,
             width: src.width,
@@ -268,6 +309,9 @@ export default function Camera() {
             strength: s.strength,
             labCorrection: s.labCorrection,
             stamp: text ? (g, w, h) => drawStamp(g, text, w, h) : null,
+            fx: effectAmounts(s.fx, p.look.effects),
+            fxSeed,
+            frame: { style: s.frame, caption: s.caption, frameNo: place?.frame, filmName: p.name },
           });
           src.cleanup?.();
           const shot: Shot = {
@@ -292,6 +336,10 @@ export default function Camera() {
               frameAspect,
               strength: s.strength,
               takenAt: stampAt.getTime(),
+              fx: s.fx,
+              fxSeed,
+              frame: s.frame,
+              caption: s.caption,
             },
           };
           await saveShot(shot);
@@ -311,7 +359,21 @@ export default function Camera() {
   /** Develop a stored original again with another camera, keeping the frame's own settings. */
   const redevelop = useCallback(
     (shot: Shot, profileId: string) => {
-      const m = shot.meta as Partial<{ ratio: CameraSettings['ratio']; stamp: CameraSettings['stamp']; labCorrection: boolean; ev: number; flash: number; zoom: number; frameAspect: number; strength: number; takenAt: number }>;
+      const m = shot.meta as Partial<{
+        ratio: CameraSettings['ratio'];
+        stamp: CameraSettings['stamp'];
+        labCorrection: boolean;
+        ev: number;
+        flash: number;
+        zoom: number;
+        frameAspect: number;
+        strength: number;
+        takenAt: number;
+        fx: CameraSettings['fx'];
+        fxSeed: number;
+        frame: FrameStyle;
+        caption: string;
+      }>;
       const p = profileById(profileId);
       enqueueDevelop(
         async () => {
@@ -324,6 +386,9 @@ export default function Camera() {
           stamp: m.stamp ?? settings.stamp,
           labCorrection: m.labCorrection ?? settings.labCorrection,
           strength: m.strength ?? settings.strength,
+          fx: m.fx ?? settings.fx,
+          frame: m.frame ?? 'none',
+          caption: m.caption ?? '',
         },
         p,
         m.zoom ?? 1,
@@ -331,7 +396,7 @@ export default function Camera() {
         m.flash ?? 0,
         m.frameAspect,
         new Date(m.takenAt ?? shot.createdAt),
-        { rollId: shot.rollId, frame: shot.frame, reprint: true },
+        { rollId: shot.rollId, frame: shot.frame, reprint: true, fxSeed: m.fxSeed },
       );
       showToast(`${p.name} 필름으로 다시 현상하고 있어요.`);
     },
@@ -340,7 +405,7 @@ export default function Camera() {
 
   // ---- rolls ----
   const activeRoll = rolls.find((r) => !r.sentAt);
-  const framesTaken = useMemo(() => (activeRoll ? shots.filter((s) => s.rollId === activeRoll.id && !s.reprint).length : 0), [shots, activeRoll]);
+  const framesTaken = useMemo(() => (activeRoll ? shots.filter((s) => s.rollId === activeRoll.id && isFrame(s)).length : 0), [shots, activeRoll]);
   const live2 = useRef({ activeRoll, framesTaken });
   live2.current = { activeRoll, framesTaken };
 
@@ -438,13 +503,94 @@ export default function Camera() {
     );
   }, [cam, settings, profile, stats, digitalZoom, shaderEv, enqueueDevelop, claimFrame]);
 
+  // ---- video: a clip of exactly 3, 5 or 10 seconds, recorded from the film preview ----
+  const startRecording = useCallback(async () => {
+    const canvas = canvasRef.current;
+    if (!canvas || recordingRef.current) return;
+    const type = pickVideoType();
+    if (!type || !('captureStream' in canvas)) {
+      showToast('이 브라우저에서는 영상을 찍을 수 없어요.');
+      return;
+    }
+    const length = settings.clipLength;
+    const p = profile;
+    const s = settings;
+    // Full-resolution preview for the clip, then hold it there while recording.
+    fullResRef.current = true;
+    recordingRef.current = true;
+    await new Promise((res) => setTimeout(res, 120));
+    const stream = canvas.captureStream(24);
+    let mic: MediaStream | null = null;
+    if (s.clipSound) {
+      try {
+        mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mic.getAudioTracks().forEach((t) => stream.addTrack(t));
+      } catch {
+        showToast('마이크를 쓸 수 없어서 소리 없이 찍어요.');
+      }
+    }
+    let rec: MediaRecorder;
+    try {
+      rec = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 5_000_000 });
+    } catch (e) {
+      mic?.getTracks().forEach((t) => t.stop());
+      stream.getTracks().forEach((t) => t.stop());
+      recordingRef.current = false;
+      showToast(`영상을 찍지 못했습니다: ${(e as Error).message}`);
+      return;
+    }
+    const chunks: Blob[] = [];
+    rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+    const takenAt = new Date();
+    let poster: Blob | null = null;
+    setTimeout(() => canvas.toBlob((b) => (poster = b), 'image/jpeg', 0.86), 300);
+    rec.onstop = async () => {
+      mic?.getTracks().forEach((t) => t.stop());
+      stream.getVideoTracks().forEach((t) => t.stop());
+      recordingRef.current = false;
+      setRecording(null);
+      haptic(15);
+      if (s.sound) shutterSound();
+      const blob = new Blob(chunks, { type: type.split(';')[0] });
+      const shot: Shot = {
+        id: `${takenAt.getTime()}-${Math.random().toString(36).slice(2, 7)}`,
+        createdAt: takenAt.getTime(),
+        profileId: p.id,
+        width: canvas.width,
+        height: canvas.height,
+        developed: blob,
+        original: poster ?? blob,
+        poster: poster ?? undefined,
+        kind: 'video',
+        duration: length,
+        rollId: CLIPS_ROLL,
+        meta: { lens: s.lens, ratio: s.ratio, length, sound: s.clipSound },
+      };
+      try {
+        await saveShot(shot);
+        setShots((list) => [shot, ...list]);
+      } catch (e) {
+        showToast(`영상을 저장하지 못했습니다: ${(e as Error).message}`);
+      }
+    };
+    recordingRef.current = true;
+    setRecording({ length });
+    if (s.sound) shutterSound();
+    haptic(15);
+    rec.start(250);
+    // Exactly the chosen length; the shutter cannot cut it short.
+    setTimeout(() => rec.state !== 'inactive' && rec.stop(), length * 1000);
+  }, [settings, profile, showToast]);
+
   const onShutter = useCallback(() => {
+    if (recordingRef.current) return;
+    const action = settings.mode === 'video' ? startRecording : fire;
     if (countdown) {
       cancelTimer.current?.();
       return;
     }
     if (!settings.timer) {
-      fire();
+      action();
       return;
     }
     let n = settings.timer;
@@ -454,7 +600,7 @@ export default function Camera() {
       if (n <= 0) {
         clearInterval(id);
         setCountdown(0);
-        fire();
+        action();
       } else {
         setCountdown(n);
         haptic(6);
@@ -464,7 +610,7 @@ export default function Camera() {
       clearInterval(id);
       setCountdown(0);
     };
-  }, [countdown, settings.timer, fire]);
+  }, [countdown, settings.timer, settings.mode, fire, startRecording]);
 
   /** Photos from the system camera (iPhone full quality) or from the library. */
   const onFiles = async (files: FileList | null, fromCamera: boolean) => {
@@ -481,7 +627,8 @@ export default function Camera() {
         },
         settings,
         profile,
-        1,
+        // System-camera shots get the chosen lens too (shoot them at 1x).
+        fromCamera ? digitalZoom : 1,
         fromCamera ? settings.ev : 0,
         fromCamera ? flashAmount(settings.flash, profile, null) : 0,
         undefined,
@@ -561,6 +708,8 @@ export default function Camera() {
   };
 
   const flashFires = flashAmount(settings.flash, profile, stats) > 0;
+  const fxNow = effectAmounts(settings.fx, profile.look.effects);
+  const fxOn = Object.values(fxNow).some((v) => (v ?? 0) > 0) || settings.frame !== 'none';
   const dday = ddayCount(settings.ddayStart);
   const stampPreview = settings.stamp === 'off' ? null : stampText(settings.stamp, new Date(), dday);
   const situations = useMemo(() => (stats ? detectSituations(stats, new Date().getHours()) : []), [stats]);
@@ -593,11 +742,11 @@ export default function Camera() {
       <video ref={cam.videoRef} className="cam-video" playsInline muted autoPlay />
 
       <header className="cam-top">
-        <button className="chip" onClick={() => update({ flash: settings.flash === 'off' ? 'auto' : settings.flash === 'auto' ? 'on' : 'off' })} aria-label="플래시">
-          <Icon name="flash" /> {settings.flash === 'off' ? '끔' : settings.flash === 'auto' ? '자동' : '켬'}
+        <button className={`chip ${settings.flash !== 'off' ? 'is-lit' : ''}`} onClick={() => update({ flash: settings.flash === 'off' ? 'auto' : settings.flash === 'auto' ? 'on' : 'off' })} aria-label={`플래시 ${settings.flash === 'off' ? '끔' : settings.flash === 'auto' ? '자동' : '켬'}`}>
+          <Icon name="flash" /> <span>{settings.flash === 'off' ? '끔' : settings.flash === 'auto' ? '자동' : '켬'}</span>
         </button>
-        <button className="chip" onClick={() => update({ timer: settings.timer === 0 ? 3 : settings.timer === 3 ? 10 : 0 })} aria-label="셀프타이머">
-          <Icon name="timer" /> {settings.timer ? `${settings.timer}초` : '끔'}
+        <button className={`chip ${settings.timer ? 'is-lit' : ''}`} onClick={() => update({ timer: settings.timer === 0 ? 3 : settings.timer === 3 ? 10 : 0 })} aria-label={`셀프타이머 ${settings.timer ? `${settings.timer}초` : '끔'}`}>
+          <Icon name="timer" /> <span>{settings.timer ? `${settings.timer}초` : '끔'}</span>
         </button>
         <button
           className="chip"
@@ -605,6 +754,9 @@ export default function Camera() {
           aria-label="화면 비율"
         >
           {ratio.label}
+        </button>
+        <button className={`chip ${fxOn ? 'is-lit' : ''}`} onClick={() => setFxSheet(true)} aria-label="효과와 프레임">
+          <Icon name="sparkle" />
         </button>
         <button className="chip" onClick={() => update({ facing: settings.facing === 'environment' ? 'user' : 'environment' })} aria-label="전면·후면 전환">
           <Icon name="flip" />
@@ -624,6 +776,7 @@ export default function Camera() {
           onPointerCancel={() => (swipeStart.current = null)}
         >
           <canvas ref={canvasRef} />
+          <div className="framelines" aria-hidden />
           {settings.grid && <div className="grid" aria-hidden />}
           {tilt != null && (
             <div className={`level ${Math.abs(tilt) < 1 ? 'is-flat' : ''}`} style={{ transform: `translate(-50%, -50%) rotate(${-tilt}deg)` }} aria-hidden />
@@ -640,7 +793,16 @@ export default function Camera() {
           <div className="finder-info" aria-hidden>
             {flashFires && <span className="led">⚡</span>}
             {stampPreview && <span className="led">{stampPreview}</span>}
-            <span className="led" title="남은 컷">{activeRoll ? String(Math.max(0, activeRoll.size - framesTaken - pendingFrames.current)).padStart(2, '0') : '--'}</span>
+          </div>
+          <div className="counter" title="남은 컷">
+            <span className="counter-mark" aria-hidden />
+            {recording ? (
+              <span className="counter-num rec">REC {recording.length}s</span>
+            ) : settings.mode === 'video' ? (
+              <span className="counter-num">{settings.clipLength}s</span>
+            ) : (
+              <span className="counter-num">{activeRoll ? String(Math.max(0, activeRoll.size - framesTaken - pendingFrames.current)).padStart(2, '0') : '--'}</span>
+            )}
           </div>
           {cam.state.status !== 'ready' && (
             <div className="finder-msg">
@@ -657,11 +819,15 @@ export default function Camera() {
         )}
       </div>
 
-      <button className="now-camera" onClick={openBag}>
-        <span className="now-name">{profile.name}</span>
-        <span className="now-iso">ISO {profile.iso}</span>
-        <span className="now-change">바꾸기</span>
-      </button>
+      <CameraStrip
+        current={profile.id}
+        recommended={recommended}
+        onPick={(id) => {
+          update({ profileId: id });
+          setSuggest(null);
+          haptic(6);
+        }}
+      />
 
       <div className="cam-dials">
         <div className="lenses" role="radiogroup" aria-label="렌즈">
@@ -673,6 +839,24 @@ export default function Camera() {
           ))}
         </div>
         <EvDial value={settings.ev} onChange={(ev) => update({ ev })} />
+      </div>
+
+      <div className="mode-row" role="radiogroup" aria-label="촬영 모드">
+        <button role="radio" aria-checked={settings.mode === 'photo'} className={settings.mode === 'photo' ? 'is-on' : ''} disabled={!!recording} onClick={() => update({ mode: 'photo' })}>
+          사진
+        </button>
+        <button role="radio" aria-checked={settings.mode === 'video'} className={settings.mode === 'video' ? 'is-on' : ''} disabled={!!recording} onClick={() => update({ mode: 'video' })}>
+          영상
+        </button>
+        {settings.mode === 'video' && (
+          <span className="clip-lengths" role="radiogroup" aria-label="영상 길이">
+            {([3, 5, 10] as const).map((n) => (
+              <button key={n} role="radio" aria-checked={settings.clipLength === n} className={settings.clipLength === n ? 'is-on' : ''} disabled={!!recording} onClick={() => update({ clipLength: n })}>
+                {n}초
+              </button>
+            ))}
+          </span>
+        )}
       </div>
 
       <footer className="cam-bottom">
@@ -687,9 +871,16 @@ export default function Camera() {
           {rolls.some((r) => rollState(r) === 'developed' && !r.openedAt) && <span className="new-dot" aria-hidden />}
           {developing > 0 && <span className="developing">현상 중</span>}
         </button>
-        <button className={`shutter ${countdown ? 'is-timer' : ''}`} onClick={onShutter} disabled={cam.state.status !== 'ready'} aria-label={countdown ? '타이머 취소' : '셔터'} />
-        <button className="body-btn" onClick={openBag} aria-label={`카메라 바꾸기, 지금은 ${profile.name}`}>
-          <CameraBody profileId={profile.id} />
+        <button
+          className={`shutter ${countdown ? 'is-timer' : ''} ${settings.mode === 'video' ? 'is-video' : ''} ${recording ? 'is-rec' : ''}`}
+          style={recording ? ({ '--len': `${recording.length}s` } as React.CSSProperties) : undefined}
+          onClick={onShutter}
+          disabled={cam.state.status !== 'ready'}
+          aria-label={recording ? `녹화 중, ${recording.length}초` : countdown ? '타이머 취소' : settings.mode === 'video' ? `${settings.clipLength}초 영상 찍기` : '셔터'}
+        />
+        <button className="bag-btn" onClick={openBag} aria-label="카메라 가방 열기">
+          <Icon name="bag" />
+          <span>가방</span>
         </button>
       </footer>
 
@@ -736,6 +927,7 @@ export default function Camera() {
           }}
         />
       )}
+      {fxSheet && <FxSheet settings={settings} update={update} cameraDefaults={profile.look.effects} cameraName={profile.name} onClose={() => setFxSheet(false)} />}
       {loader && <RollLoader reason={loader.reason} onLoad={loadRoll} onClose={() => setLoader(null)} />}
       {viewer && (
         <Viewer
@@ -754,6 +946,118 @@ export default function Camera() {
 }
 
 // -----------------------------------------------------------------------------
+
+/**
+ * The cameras as a row of small bodies under the viewfinder. Tap to pick one.
+ * Cameras that suit the scene in front of you carry an orange LED; the
+ * "추천" button jumps to the best one.
+ */
+function CameraStrip({ current, recommended, onPick }: { current: string; recommended: string[]; onPick: (id: string) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const currentProfile = profileById(current);
+  // Keep the camera in hand in view (after swipes, bag picks, suggestions).
+  useEffect(() => {
+    const el = ref.current?.querySelector<HTMLElement>(`[data-id="${current}"]`);
+    el?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }, [current]);
+  const best = recommended.find((id) => id !== current);
+  return (
+    <div className="strip-wrap">
+      <div className="strip-label">
+        <strong>{currentProfile.name}</strong>
+        <span>{currentProfile.film}</span>
+        {best && (
+          <button className="strip-rec" onClick={() => onPick(best)}>
+            <span className="led-dot" aria-hidden /> 추천 {profileById(best).name}
+          </button>
+        )}
+      </div>
+      <div className="cam-strip" ref={ref} role="radiogroup" aria-label="카메라">
+        {PROFILES.map((p) => (
+          <button
+            key={p.id}
+            data-id={p.id}
+            role="radio"
+            aria-checked={p.id === current}
+            aria-label={`${p.name}${recommended.includes(p.id) ? ', 지금 장면에 추천' : ''}`}
+            className={`mini ${p.id === current ? 'is-on' : ''}`}
+            onClick={() => onPick(p.id)}
+          >
+            {recommended.includes(p.id) && <span className="led-dot" aria-hidden />}
+            <CameraBody profileId={p.id} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FxSheet({
+  settings,
+  update,
+  cameraDefaults,
+  cameraName,
+  onClose,
+}: {
+  settings: CameraSettings;
+  update: (p: Partial<CameraSettings>) => void;
+  cameraDefaults?: import('../engine/types').FilmEffects;
+  cameraName: string;
+  onClose: () => void;
+}) {
+  return (
+    <div className="sheet-backdrop" onClick={onClose}>
+      <section className="sheet" role="dialog" aria-label="효과와 프레임" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-head">
+          <h2>효과와 프레임</h2>
+          <button className="text" onClick={onClose}>닫기</button>
+        </div>
+        <div className="group">
+          <h3>필름 효과</h3>
+          {EFFECTS.map((e) => {
+            const mode = settings.fx[e.key] ?? 'auto';
+            const def = cameraDefaults?.[e.key] ?? 0;
+            return (
+              <div className="fx-row" key={e.key}>
+                <span>
+                  {e.label}
+                  <small>{e.hint}</small>
+                </span>
+                <div className="seg small" role="radiogroup" aria-label={e.label}>
+                  {(['auto', 'on', 'off'] as const).map((m) => (
+                    <button key={m} role="radio" aria-checked={mode === m} className={mode === m ? 'is-on' : ''} onClick={() => update({ fx: { ...settings.fx, [e.key]: m } })}>
+                      {m === 'auto' ? (def > 0 ? `${cameraName} 기본(켬)` : `${cameraName} 기본(끔)`) : m === 'on' ? '켜기' : '끄기'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="group">
+          <h3>인화 프레임</h3>
+          <div className="seg" role="radiogroup" aria-label="인화 프레임">
+            {(Object.keys(FRAME_LABELS) as FrameStyle[]).map((f) => (
+              <button key={f} role="radio" aria-checked={settings.frame === f} className={settings.frame === f ? 'is-on' : ''} onClick={() => update({ frame: f })}>
+                {FRAME_LABELS[f]}
+              </button>
+            ))}
+          </div>
+          {settings.frame === 'instant' && (
+            <label className="row">
+              <span>문구</span>
+              <input className="caption-input" value={settings.caption} maxLength={28} placeholder="예: 우리의 첫 여름" onChange={(e) => update({ caption: e.target.value })} />
+            </label>
+          )}
+          <p className="sheet-note">프레임은 저장되는 사진에 들어가요. 뷰파인더에는 보이지 않아요.</p>
+        </div>
+        <div className="group">
+          <Toggle label="영상에 소리 넣기" hint="켜면 처음 한 번 마이크 권한을 물어봐요." on={settings.clipSound} onChange={(v) => update({ clipSound: v })} />
+        </div>
+      </section>
+    </div>
+  );
+}
 
 function EvDial({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const drag = useRef<{ x: number; v: number } | null>(null);
@@ -831,7 +1135,7 @@ function SettingsSheet({
             <Icon name="camera" />
             <span>
               <strong>기본 카메라로 찍기</strong>
-              <small>{isIOS ? '아이폰에서 가장 선명하게 찍는 방법이에요. 찍은 뒤 지금 필름으로 현상합니다.' : '폰 기본 카메라로 찍고 지금 필름으로 현상합니다.'}</small>
+              <small>{isIOS ? '아이폰에서 가장 선명하게 찍는 방법이에요.' : '폰 기본 카메라로 찍습니다.'} 1배로 찍으면 지금 렌즈와 필름으로 현상해요.</small>
             </span>
             <input type="file" accept="image/*" capture="environment" onChange={(e) => { onFiles(e.target.files, true); onClose(); }} />
           </label>
@@ -890,6 +1194,7 @@ function SettingsSheet({
         <p className="sheet-note">
           사진은 이 기기 안에만 저장됩니다. 찍은 사진에서 "사진 앱에 저장"을 눌러 갤러리로 옮겨 주세요.
         </p>
+        <a className="sheet-link" href="#/match">실제 필름과 맞추기</a>
         <a className="sheet-link" href="#/lab">현상실 열기</a>
       </section>
     </div>
@@ -923,6 +1228,7 @@ function Viewer({
 }) {
   const [index, setIndex] = useState(initialIndex);
   const [picking, setPicking] = useState(false);
+  useBackClose(picking, () => setPicking(false));
   const stripRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = stripRef.current;
@@ -930,7 +1236,14 @@ function Viewer({
   }, []); // run once: jump to the tapped frame
   const [compare, setCompare] = useState<string | null>(null);
   const urls = useMemo(() => shots.map((s) => URL.createObjectURL(s.developed)), [shots]);
-  useEffect(() => () => urls.forEach((u) => URL.revokeObjectURL(u)), [urls]);
+  const posters = useMemo(() => shots.map((s) => (s.kind === 'video' && s.poster ? URL.createObjectURL(s.poster) : '')), [shots]);
+  useEffect(
+    () => () => {
+      urls.forEach((u) => URL.revokeObjectURL(u));
+      posters.forEach((u) => u && URL.revokeObjectURL(u));
+    },
+    [urls, posters],
+  );
   const shot = shots[Math.min(index, shots.length - 1)];
   useEffect(() => {
     if (!shots.length) onClose();
@@ -981,13 +1294,17 @@ function Viewer({
             <div
               className="viewer-photo"
               style={{ aspectRatio: `${shots[i].width} / ${shots[i].height}` }}
-              onPointerDown={i === index ? startCompare : undefined}
+              onPointerDown={i === index && shots[i].kind !== 'video' ? startCompare : undefined}
               onPointerUp={endCompare}
               onPointerLeave={endCompare}
               onPointerCancel={endCompare}
               onContextMenu={(e) => e.preventDefault()}
             >
-              <img src={u} alt="" loading={i < 3 ? 'eager' : 'lazy'} draggable={false} />
+              {shots[i].kind === 'video' ? (
+                <video src={u} poster={posters[i] || undefined} controls playsInline loop preload="metadata" />
+              ) : (
+                <img src={u} alt="" loading={i < 3 ? 'eager' : 'lazy'} draggable={false} />
+              )}
               {compare && i === index && (
                 <>
                   <img className="viewer-original" src={compare} alt="" draggable={false} style={{ transform: `scale(${(shots[i].meta as { zoom?: number }).zoom ?? 1})` }} />
@@ -998,10 +1315,10 @@ function Viewer({
           </div>
         ))}
       </div>
-      <p className="viewer-hint">사진을 길게 누르면 원본과 비교할 수 있어요.</p>
+      <p className="viewer-hint">{shot.kind === 'video' ? `${shot.duration ?? ''}초 필름 영상` : '사진을 길게 누르면 원본과 비교할 수 있어요.'}</p>
       <div className="viewer-actions">
-        <button onClick={() => exportShots([shot])}>사진 앱에 저장</button>
-        <button onClick={() => setPicking(true)}>다시 현상</button>
+        <button onClick={() => exportShots([shot])}>{shot.kind === 'video' ? '영상 저장' : '사진 앱에 저장'}</button>
+        {shot.kind !== 'video' && <button onClick={() => setPicking(true)}>다시 현상</button>}
         <button
           className="danger"
           onClick={() => {

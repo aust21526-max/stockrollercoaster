@@ -146,7 +146,7 @@
 .switch.is-on { background: #e9e8e3; }
 .switch.is-on::after { transform: translateX(18px); background: #111; }
 .sheet-note { color: var(--dim); font-size: 12px; line-height: 1.6; border-top: 1px solid var(--rule); padding-top: 14px; }
-.sheet-link { color: var(--dim); font-size: 13px; }
+.sheet-link { display: block; margin-top: 10px; color: var(--dim); font-size: 13px; }
 
 /* ---- viewer ---- */
 .viewer { position: fixed; inset: 0; z-index: 20; background: #000; display: flex; flex-direction: column; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
@@ -346,3 +346,136 @@
 .name-flash span { font-size: 12px; color: rgba(255,255,255,.8); }
 @keyframes name-flash { 0% { opacity: 0; transform: translate(-50%, -46%); } 12% { opacity: 1; transform: translate(-50%, -50%); } 70% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .name-flash { animation: none; } }
+
+/* =====================================================================
+ * Camera body pass: top plate, framelines, counter window, camera strip,
+ * leatherette deck. The screen should read as a camera, not an app.
+ * ===================================================================== */
+
+/* Top plate: dark brushed metal with engraved controls. */
+.cam-top {
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.018) 0 1px, transparent 1px 3px),
+    linear-gradient(#262624, #171716);
+  border-bottom: 1px solid #000;
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,.06);
+  margin-top: calc(-1 * env(safe-area-inset-top));
+  padding-top: calc(8px + env(safe-area-inset-top));
+}
+.cam-top .chip { color: #cfcac0; position: relative; }
+.cam-top .chip span { font-size: 12px; }
+.cam-top .chip.is-lit { color: #f4efe6; }
+.cam-top .chip.is-lit::after {
+  content: ''; position: absolute; top: 6px; right: 6px; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--led); box-shadow: 0 0 6px var(--led);
+}
+
+/* Viewfinder window with rangefinder framelines. */
+.cam-finder-wrap { padding: 10px 12px 0; }
+.cam-finder { border-radius: 6px; box-shadow: 0 0 0 1px #2a2a28, 0 0 0 4px #0b0b0b, 0 0 0 5px #242422; }
+.framelines {
+  position: absolute; inset: 7%; pointer-events: none; opacity: .5;
+  --l: 18px; --c: rgba(255,255,255,.9);
+  background:
+    linear-gradient(var(--c), var(--c)) top left / var(--l) 1px no-repeat,
+    linear-gradient(var(--c), var(--c)) top left / 1px var(--l) no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / var(--l) 1px no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / 1px var(--l) no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / var(--l) 1px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / 1px var(--l) no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / var(--l) 1px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / 1px var(--l) no-repeat;
+}
+.finder-info { left: 12px; right: auto; }
+
+/* Frame counter: a little window with a printed number, like the real thing. */
+.counter {
+  position: absolute; top: 10px; right: 10px; display: flex; align-items: center; gap: 5px; pointer-events: none;
+  padding: 3px 8px 3px 6px; border-radius: 12px; background: rgba(10,10,10,.72); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+}
+.counter-mark { width: 0; height: 0; border: 4px solid transparent; border-left: 6px solid var(--led); }
+.counter-num { font-size: 13px; font-weight: 700; color: #f4efe6; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+
+/* Camera strip under the viewfinder. */
+.strip-wrap { padding: 10px 0 0; }
+.strip-label { display: flex; align-items: baseline; gap: 8px; padding: 0 16px 4px; min-height: 22px; }
+.strip-label strong { font-family: 'Gowun Batang', serif; font-weight: 400; font-size: 18px; letter-spacing: -0.01em; }
+.strip-label > span { font-size: 11px; color: var(--dim); }
+.strip-rec { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font-size: 11px !important; color: #e9e3d6 !important; padding: 4px 9px !important; border-radius: 12px; background: #1e1d1b !important; box-shadow: inset 0 0 0 1px #34322e; white-space: nowrap; }
+.led-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--led); box-shadow: 0 0 6px var(--led); }
+.cam-strip { display: flex; gap: 4px; overflow-x: auto; padding: 4px 16px 6px; scrollbar-width: none; scroll-snap-type: x proximity; }
+.cam-strip::-webkit-scrollbar { display: none; }
+.mini { position: relative; flex: none; width: 64px; height: 46px; padding: 4px !important; border-radius: 10px; opacity: .55; transition: opacity .15s, transform .15s, background .15s; scroll-snap-align: center; }
+.mini svg { width: 100%; height: 100%; }
+.mini.is-on { opacity: 1; background: #1c1b19 !important; box-shadow: inset 0 0 0 1px #3a3833; transform: translateY(-2px); }
+.mini .led-dot { position: absolute; top: 3px; right: 6px; width: 5px; height: 5px; }
+
+/* Bottom deck: leatherette grip. */
+.cam-dials, .cam-bottom {
+  background-color: #111110;
+  background-image: radial-gradient(rgba(255,255,255,.035) 1px, transparent 1.4px), radial-gradient(rgba(0,0,0,.5) 1px, transparent 1.4px);
+  background-size: 5px 5px, 5px 5px;
+  background-position: 0 0, 2.5px 2.5px;
+}
+.cam-dials { margin-top: 8px; border-top: 1px solid #2c2b29; box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+.cam-bottom { margin-bottom: calc(-1 * env(safe-area-inset-bottom)); padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+.cam { padding-bottom: 0; background: #0a0a0a; }
+.bag-btn { justify-self: end; width: 56px; height: 56px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; background: #1c1b19 !important; box-shadow: inset 0 0 0 1px #34322e; color: #d9d4c9 !important; }
+.bag-btn span { font-size: 10px; }
+.last { box-shadow: inset 0 0 0 1px #34322e; }
+
+/* Sheets get a grab handle and a warmer surface. */
+.sheet { background: #141312; }
+.sheet::before { content: ''; display: block; width: 36px; height: 4px; border-radius: 2px; background: #3a3833; margin: -6px auto 10px; }
+
+/* Bag: camera names as nameplates. */
+.bag-hero-text h2 { font-family: 'Gowun Batang', serif; font-weight: 400; font-size: 36px; letter-spacing: -0.01em; }
+
+/* ---- photo / video mode ---- */
+.mode-row {
+  display: flex; align-items: center; justify-content: center; gap: 4px; padding: 6px 16px 0;
+  background-color: #111110;
+  background-image: radial-gradient(rgba(255,255,255,.035) 1px, transparent 1.4px), radial-gradient(rgba(0,0,0,.5) 1px, transparent 1.4px);
+  background-size: 5px 5px, 5px 5px; background-position: 0 0, 2.5px 2.5px;
+}
+.mode-row > button { font-size: 13px !important; padding: 6px 12px !important; color: var(--dim) !important; border-radius: 14px; }
+.mode-row > button.is-on { color: #f4efe6 !important; background: #1f1e1c !important; box-shadow: inset 0 0 0 1px #3a3833; }
+.clip-lengths { display: inline-flex; gap: 2px; margin-left: 8px; padding-left: 10px; border-left: 1px solid #34322e; }
+.clip-lengths button { font-size: 12px !important; padding: 5px 9px !important; color: var(--dim) !important; border-radius: 12px; font-variant-numeric: tabular-nums; }
+.clip-lengths button.is-on { color: #fff !important; background: #6b1d16 !important; }
+
+/* Video shutter: red core; while recording a ring fills over exactly the clip length. */
+.shutter.is-video { position: relative; }
+.shutter.is-video::after {
+  content: ''; position: absolute; inset: 22px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #ff6b5a, #c8261a 70%); box-shadow: 0 0 0 2px rgba(0,0,0,.25);
+  transition: inset .2s, border-radius .2s;
+}
+.shutter.is-rec::after { inset: 27px; border-radius: 6px; }
+.shutter.is-rec::before {
+  content: ''; position: absolute; inset: -9px; border-radius: 50%;
+  background: conic-gradient(#e2412f var(--p, 0deg), rgba(255,255,255,.08) 0);
+  -webkit-mask: radial-gradient(circle, transparent 41px, #000 42px); mask: radial-gradient(circle, transparent 41px, #000 42px);
+  animation: rec-ring var(--len, 5s) linear forwards;
+}
+@property --p { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@keyframes rec-ring { from { --p: 0deg; } to { --p: 360deg; } }
+.counter-num.rec { color: #ff8a7a; animation: rec-blink 1s steps(2) infinite; }
+@keyframes rec-blink { 50% { opacity: .45; } }
+
+/* ---- effects sheet ---- */
+.fx-row { display: flex; flex-direction: column; gap: 6px; padding: 8px 0; }
+.fx-row > span { display: flex; flex-direction: column; gap: 2px; font-size: 15px; }
+.fx-row small { color: var(--dim); font-size: 12px; }
+.seg.small button { height: 32px; font-size: 12px; }
+.caption-input { flex: 1; }
+
+/* ---- viewer video ---- */
+.viewer-photo video { display: block; width: 100%; height: 100%; object-fit: contain; background: #000; }
+
+/* ---- contact sheet sharing ---- */
+.share-row { display: flex; gap: 8px; padding: 4px 16px 10px; }
+.share-row button { flex: 1; height: 42px; border-radius: 10px; background: #24211e !important; box-shadow: inset 0 0 0 1px #3a3632; font-size: 13px; }
+.share-row button:disabled { opacity: .5; }
+.making { margin: 0 16px 8px; font-size: 13px; color: var(--dim); }
+.frame .play { position: absolute; top: 4px; right: 4px; font-size: 10px; font-weight: 700; color: #fff; background: rgba(0,0,0,.55); padding: 2px 5px; border-radius: 4px; }

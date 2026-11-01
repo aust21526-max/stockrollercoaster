@@ -118,6 +118,16 @@ uniform float uGrainSize;    // relative to height, x1000
 uniform float uGrainColor;
 uniform float uStrength;
 uniform vec4 uCrop;
+uniform float uLeak;
+uniform float uDust;
+uniform float uStar;
+uniform float uPrism;
+uniform float uFxSeed;
+uniform bool uFast;
+
+vec3 hue2rgb(float h) {
+  return clamp(abs(mod(h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+}
 
 const float HUE_C[9] = float[9](25.0, 55.0, 100.0, 140.0, 195.0, 255.0, 295.0, 335.0, 385.0);
 
@@ -204,6 +214,44 @@ void main() {
   float cosA = cos(atan(r / max(uVigSize, 0.05)));
   lin *= mix(1.0, cosA * cosA * cosA * cosA, uVigAmount);
 
+  // --- lens filters (linear) ---
+  if (uStar > 0.0) {
+    // Cross-screen filter: four rays from every bright point.
+    vec3 st = vec3(0.0);
+    float len = 0.14;
+    int steps = uFast ? 8 : 26;
+    // Jitter the sample positions per pixel so rays are smooth, not dotted.
+    float jit = hash(gl_FragCoord.xy + 3.7);
+    float ang = 0.35;
+    for (int k = 0; k < 2; k++) {
+      float a = ang + float(k) * 1.5708;
+      vec2 dir = vec2(cos(a) / uAspect, sin(a)) * len;
+      for (int i = 1; i <= 26; i++) {
+        if (i > steps) break;
+        float t = (float(i) - jit) / float(steps);
+        float w = (1.0 - t) * (1.0 - t);
+        vec2 p1 = uv + dir * t;
+        vec2 p2 = uv - dir * t;
+        // Only small bright points make rays: subtract the wide highlight blur,
+        // which is high over big bright areas (sky, walls) and low around points.
+        float b1 = max(dot(dec(texture(uPrep, p1).rgb), LUMA) - 0.7 - 1.2 * dot(dec(texture(uGlow, p1).rgb), LUMA), 0.0);
+        float b2 = max(dot(dec(texture(uPrep, p2).rgb), LUMA) - 0.7 - 1.2 * dot(dec(texture(uGlow, p2).rgb), LUMA), 0.0);
+        st += vec3(1.0, 0.97, 0.92) * (b1 + b2) * w;
+      }
+    }
+    lin += st * uStar * (uFast ? 2.2 : 0.7);
+  }
+  if (uPrism > 0.0) {
+    // A prism at the lens edge: a displaced, rainbow-tinted ghost on one side.
+    float side = step(0.5, fract(uFxSeed * 0.731));
+    float ex = side > 0.5 ? 1.0 - uv.x : uv.x;
+    float mask = 1.0 - smoothstep(0.0, 0.42, ex);
+    vec2 o = vec2((side > 0.5 ? -1.0 : 1.0) * 0.06, 0.01);
+    float gl = dot(dec(texture(uPrep, uv + o).rgb), LUMA);
+    vec3 rainbow = hue2rgb(fract(uv.y * 1.3 + ex * 2.0 + fract(uFxSeed * 0.37)));
+    lin += gl * rainbow * mask * uPrism * 0.7;
+  }
+
   // --- tone (display) ---
   vec3 s = toSrgb(shoulder(max(lin, 0.0)));
   s = tone(s);
@@ -244,6 +292,19 @@ void main() {
   ab += ws * uShadowTone.z * uShadowTone.xy + wh * uHighlightTone.z * uHighlightTone.xy;
   s = toSrgb(oklabToLin(vec3(L, ab)));
 
+  // --- light leak (display, screen blend) ---
+  if (uLeak > 0.0) {
+    float seed = fract(uFxSeed * 0.618) ;
+    float side = step(0.5, fract(seed * 7.13));
+    float y0 = 0.15 + 0.7 * fract(seed * 3.71);
+    float dx = side > 0.5 ? 1.0 - uv.x : uv.x;
+    float dy = uv.y - y0;
+    float w = exp(-dx * dx / 0.02) * exp(-dy * dy / 0.18) + 0.45 * exp(-dx * dx / 0.1) * exp(-dy * dy / 0.5);
+    w = clamp(w, 0.0, 1.0);
+    vec3 col = mix(vec3(0.95, 0.18, 0.05), vec3(1.0, 0.72, 0.32), smoothstep(0.35, 1.0, w));
+    s = 1.0 - (1.0 - s) * (1.0 - clamp(col * w * uLeak * 1.3, 0.0, 1.0));
+  }
+
   // --- grain (display) ---
   if (uGrainAmount > 0.0) {
     float cellRaw = uGrainSize * uResolution.y / 1000.0;
@@ -255,6 +316,32 @@ void main() {
     float l = dot(s, LUMA);
     float w = clamp(1.0 - pow(abs(l - 0.4) / 0.6, 2.0), 0.18, 1.0);
     s += g * uGrainAmount * w * 0.11 * min(cellRaw, 1.0);
+  }
+
+  // --- dust and scratches (display) ---
+  if (uDust > 0.0) {
+    float cellPx = uResolution.y / 90.0;
+    vec2 gp = gl_FragCoord.xy / cellPx;
+    vec2 cell = floor(gp);
+    vec2 f = fract(gp);
+    float h = hash(cell + uFxSeed * 13.0);
+    if (h < 0.03 * uDust) {
+      vec2 c = vec2(hash(cell + 1.7), hash(cell + 3.1));
+      float r = mix(0.05, 0.2, hash(cell + 5.3));
+      float speck = 1.0 - smoothstep(r * 0.55, r, length(f - c));
+      s = mix(s, vec3(0.93, 0.92, 0.9), speck * 0.8);
+    }
+    float lx = uv.x * 30.0;
+    float lc = floor(lx);
+    float lh = hash(vec2(lc, uFxSeed * 3.0 + 1.0));
+    if (lh < 0.08 * uDust) {
+      float xpos = 0.2 + 0.6 * hash(vec2(lc, 7.0 + uFxSeed));
+      float wob = sin(uv.y * 7.0 + lh * 40.0) * 0.04;
+      float d = abs(fract(lx) - xpos - wob) * (uResolution.x / 30.0);
+      float y0 = hash(vec2(lc, 11.0 + uFxSeed));
+      float seg = smoothstep(0.0, 0.05, uv.y - y0 * 0.6) * (1.0 - smoothstep(0.0, 0.05, uv.y - y0 * 0.6 - 0.25 - 0.4 * lh / 0.08));
+      s = mix(s, vec3(0.9), (1.0 - smoothstep(0.4, 1.4, d)) * 0.45 * seg);
+    }
   }
 
   // --- strength blend + dither ---

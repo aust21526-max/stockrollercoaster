@@ -1,3 +1,5 @@
+import { extFor, shareFiles } from './share';
+
 /**
  * Shots live in IndexedDB on the device. We keep the original next to the
  * developed photo so it can be re-developed with another film later.
@@ -19,7 +21,17 @@ export interface Shot {
   frame?: number;
   /** An extra print from "다시 현상": not a new frame. */
   reprint?: boolean;
+  /** 'video' = a short film clip; `developed` is the video, `poster` its first frame. */
+  kind?: 'photo' | 'video';
+  poster?: Blob;
+  /** Clip length in seconds. */
+  duration?: number;
 }
+
+/** Still image to show for a shot in grids and thumbnails. */
+export const stillOf = (s: Shot) => (s.kind === 'video' ? s.poster ?? s.developed : s.developed);
+/** Counts toward a roll's frames (videos and reprints do not). */
+export const isFrame = (s: Shot) => !s.reprint && s.kind !== 'video';
 
 /**
  * A roll of film. "instant" shows frames as they are taken; "wait" hides them
@@ -120,28 +132,14 @@ export function requestPersistence() {
 }
 
 /**
- * Hands photos to the system: on iPhone the share sheet has "Save N Images",
+ * Hands photos and clips to the system: on iPhone the share sheet has "Save",
  * on Android it offers Gallery/Photos. Falls back to downloads.
  */
 export async function exportShots(shots: Shot[]) {
   const files = shots.map((shot) => {
-    const name = `FILM_${new Date(shot.createdAt).toISOString().replace(/[-:T]/g, '').slice(0, 14)}_${shot.id.slice(-5)}.jpg`;
-    return new File([shot.developed], name, { type: 'image/jpeg' });
+    const ext = extFor(shot.developed.type);
+    const name = `FILM_${new Date(shot.createdAt).toISOString().replace(/[-:T]/g, '').slice(0, 14)}_${shot.id.slice(-5)}.${ext}`;
+    return new File([shot.developed], name, { type: shot.developed.type || 'image/jpeg' });
   });
-  if (navigator.canShare?.({ files })) {
-    try {
-      await navigator.share({ files });
-      return;
-    } catch (e) {
-      if ((e as DOMException).name === 'AbortError') return;
-    }
-  }
-  for (const file of files) {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(file);
-    a.download = file.name;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    await new Promise((res) => setTimeout(res, 250));
-  }
+  await shareFiles(files);
 }

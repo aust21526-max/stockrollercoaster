@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useBackClose } from '../back';
 import { profileById } from '../engine/profiles';
-import { nextMorning, rollState, rollVisible, type Roll, type Shot } from './store';
+import { contactSheetImage, extFor, rollFilm, shareFiles } from './share';
+import { isFrame, nextMorning, rollState, rollVisible, stillOf, type Roll, type Shot } from './store';
 
 /**
  * The album is a stack of lab envelopes, one per roll. Opening one lays the
@@ -8,6 +10,7 @@ import { nextMorning, rollState, rollVisible, type Roll, type Shot } from './sto
  */
 
 export const IMPORTED_ROLL = 'imported';
+export const CLIPS_ROLL = 'clips';
 
 const fmtDate = (t: number) => {
   const d = new Date(t);
@@ -43,6 +46,8 @@ export function Album({
   const [now, setNow] = useState(Date.now());
   const [open, setOpen] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  useBackClose(open !== null, () => setOpen(null));
+  useBackClose(sending, () => setSending(false));
 
   // Tick while something is at the lab, so envelopes arrive on their own.
   const anyDeveloping = rolls.some((r) => rollState(r, now) === 'developing');
@@ -66,12 +71,13 @@ export function Album({
 
   const envelopes: Envelope[] = [
     ...rolls.filter((r) => r.sentAt).map((r) => ({ key: r.id, roll: r, title: r.name, shots: byRoll.get(r.id) ?? [] })),
+    ...(byRoll.get(CLIPS_ROLL)?.length ? [{ key: CLIPS_ROLL, title: '필름 영상', shots: byRoll.get(CLIPS_ROLL)! }] : []),
     ...(byRoll.get(IMPORTED_ROLL)?.length ? [{ key: IMPORTED_ROLL, title: '필터 입힌 사진', shots: byRoll.get(IMPORTED_ROLL)! }] : []),
     ...(byRoll.get('legacy')?.length ? [{ key: 'legacy', title: '지난 사진', shots: byRoll.get('legacy')! }] : []),
   ];
 
   const activeShots = activeRoll ? byRoll.get(activeRoll.id) ?? [] : [];
-  const framesTaken = activeShots.filter((s) => !s.reprint).length;
+  const framesTaken = activeShots.filter(isFrame).length;
   const openEnvelope = envelopes.find((e) => e.key === open);
 
   if (openEnvelope) {
@@ -131,6 +137,7 @@ export function Album({
         {envelopes.map((env) => {
           const state = env.roll ? rollState(env.roll, now) : 'developed';
           const frames = env.shots.filter((s) => !s.reprint);
+          const clipsOnly = env.key === CLIPS_ROLL;
           const cameras = [...new Set(env.shots.map((s) => profileById(s.profileId).name))];
           const fresh = env.roll && state === 'developed' && !env.roll.openedAt;
           const first = env.shots[0]?.createdAt;
@@ -153,7 +160,7 @@ export function Album({
                   {first ? (first && last && fmtDate(first) !== fmtDate(last) ? `${fmtDate(first)} ~ ${fmtDate(last)}` : fmtDate(first)) : ''}
                 </span>
                 <span className="env-row">
-                  {frames.length}장{cameras.length ? `, ${cameras.slice(0, 3).join(', ')}${cameras.length > 3 ? ' 외' : ''}` : ''}
+                  {frames.length}{clipsOnly ? '편' : '장'}{cameras.length ? `, ${cameras.slice(0, 3).join(', ')}${cameras.length > 3 ? ' 외' : ''}` : ''}
                 </span>
               </span>
               <span className={`lab-stamp stamp-${state}`} aria-hidden>
@@ -208,10 +215,49 @@ export function Album({
 
 function ContactSheet({ envelope, onBack, onView }: { envelope: Envelope; onBack: () => void; onView: (shots: Shot[], index: number) => void }) {
   const visible = rollVisible(envelope.roll);
-  const urls = useMemo(() => (visible ? envelope.shots.map((s) => URL.createObjectURL(s.developed)) : []), [envelope.shots, visible]);
+  const urls = useMemo(() => (visible ? envelope.shots.map((s) => URL.createObjectURL(stillOf(s))) : []), [envelope.shots, visible]);
   useEffect(() => () => urls.forEach((u) => URL.revokeObjectURL(u)), [urls]);
+  const [making, setMaking] = useState('');
   const rows: Shot[][] = [];
   for (let i = 0; i < envelope.shots.length; i += 3) rows.push(envelope.shots.slice(i, i + 3));
+
+  const photos = envelope.shots.filter((s) => s.kind !== 'video');
+  const first = envelope.shots[0]?.createdAt;
+  const subtitle = first ? `${fmtDate(first)}, ${photos.length}장` : '';
+  const safeName = envelope.title.replace(/[\\/:*?"<>|]/g, '').trim() || 'roll';
+
+  const saveSheet = async () => {
+    setMaking('인화지를 만드는 중');
+    try {
+      const blob = await contactSheetImage(
+        envelope.shots.map((s) => ({ blob: stillOf(s), frame: s.frame })),
+        envelope.title,
+        subtitle,
+      );
+      await shareFiles([new File([blob], `${safeName}_contact.jpg`, { type: 'image/jpeg' })]);
+    } catch (e) {
+      alert((e as Error).message);
+    } finally {
+      setMaking('');
+    }
+  };
+
+  const makeFilm = async () => {
+    setMaking('영상을 만드는 중 0%');
+    try {
+      const blob = await rollFilm(
+        photos.map((s) => s.developed),
+        envelope.title,
+        subtitle,
+        (p) => setMaking(`영상을 만드는 중 ${Math.round(p * 100)}%`),
+      );
+      await shareFiles([new File([blob], `${safeName}_film.${extFor(blob.type)}`, { type: blob.type })]);
+    } catch (e) {
+      alert((e as Error).message);
+    } finally {
+      setMaking('');
+    }
+  };
 
   return (
     <div className="album sheet-open" role="dialog" aria-label={envelope.title}>
@@ -220,6 +266,13 @@ function ContactSheet({ envelope, onBack, onView }: { envelope: Envelope; onBack
         <h2>{envelope.title}</h2>
         <span />
       </header>
+      {photos.length > 0 && (
+        <div className="share-row">
+          <button onClick={saveSheet} disabled={!!making}>인화지 한 장으로 저장</button>
+          <button onClick={makeFilm} disabled={!!making}>롤 영상 만들기</button>
+        </div>
+      )}
+      {making && <p className="making" role="status">{making}…</p>}
       <div className="contact" aria-label="밀착 인화지">
         {rows.map((row, r) => (
           <div className="strip" key={r}>
@@ -228,8 +281,9 @@ function ContactSheet({ envelope, onBack, onView }: { envelope: Envelope; onBack
               {row.map((shot, i) => {
                 const idx = r * 3 + i;
                 return (
-                  <button key={shot.id} className="frame" onClick={() => onView(envelope.shots, idx)} aria-label={`${shot.frame ?? idx + 1}번 사진 보기`}>
+                  <button key={shot.id} className="frame" onClick={() => onView(envelope.shots, idx)} aria-label={`${shot.frame ?? idx + 1}번 ${shot.kind === 'video' ? '영상' : '사진'} 보기`}>
                     <img src={urls[idx]} alt="" loading="lazy" />
+                    {shot.kind === 'video' && <span className="play" aria-hidden>▶ {shot.duration}s</span>}
                     <span className="edge">
                       ▸{shot.frame ?? idx + 1}
                       {shot.reprint ? 'R' : ''}
