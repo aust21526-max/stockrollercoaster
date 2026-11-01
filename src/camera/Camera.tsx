@@ -11,7 +11,8 @@ import { Icon } from './icons';
 import { ddayCount, LENSES, MAIN_FOCAL, RATIOS, useSettings, type CameraSettings, type FlashMode } from './settings';
 import { haptic, shutterSound } from './sound';
 import { drawStamp, stampText } from './stamp';
-import { deleteShot, exportShots, listShots, requestPersistence, saveShot, type Shot } from './store';
+import { Album, IMPORTED_ROLL, RollLoader } from './Album';
+import { deleteShot, exportShots, listRolls, listShots, newRoll, requestPersistence, rollState, rollVisible, saveRoll, saveShot, type Roll, type Shot } from './store';
 import { useCamera } from './useCamera';
 import './camera.css';
 
@@ -49,7 +50,12 @@ export default function Camera() {
   const [blink, setBlink] = useState(false);
   const [screenFlash, setScreenFlash] = useState(false);
   const [sheet, setSheet] = useState(false);
-  const [viewer, setViewer] = useState(false);
+  const [viewer, setViewer] = useState<{ ids: string[]; index: number } | null>(null);
+  const [rolls, setRolls] = useState<Roll[]>([]);
+  const [album, setAlbum] = useState(false);
+  const [loader, setLoader] = useState<{ reason?: string } | null>(null);
+  /** Frames shot but still developing, so frame numbers stay right during bursts. */
+  const pendingFrames = useRef(0);
   const [bag, setBag] = useState<{ snapshot: HTMLCanvasElement | null } | null>(null);
   const [toast, setToast] = useState('');
   const [focus, setFocus] = useState<{ x: number; y: number; key: number } | null>(null);
@@ -87,6 +93,13 @@ export default function Camera() {
     }
     requestPersistence();
     listShots().then(setShots).catch(() => {});
+    listRolls()
+      .then((list) => {
+        setRolls(list);
+        const arrived = list.filter((r) => rollState(r) === 'developed' && !r.openedAt);
+        if (arrived.length) setTimeout(() => setToast('현상소에서 봉투가 도착했어요. 앨범에서 열어 보세요.'), 800);
+      })
+      .catch(() => {});
     return () => rendererRef.current?.dispose();
   }, []);
 
@@ -185,15 +198,19 @@ export default function Camera() {
   }, [cam.state.status, cam.videoRef]);
 
   // ---- thumbnail of the latest shot ----
+  const latestVisible = useMemo(() => {
+    const byId = new Map(rolls.map((r) => [r.id, r]));
+    return shots.find((s) => rollVisible(s.rollId ? byId.get(s.rollId) : undefined));
+  }, [shots, rolls]);
   useEffect(() => {
-    if (!shots[0]) {
+    if (!latestVisible) {
       setThumb('');
       return;
     }
-    const url = URL.createObjectURL(shots[0].developed);
+    const url = URL.createObjectURL(latestVisible.developed);
     setThumb(url);
     return () => URL.revokeObjectURL(url);
-  }, [shots]);
+  }, [latestVisible]);
 
   // ---- level ----
   useEffect(() => {
@@ -229,6 +246,7 @@ export default function Camera() {
       frameAspect?: number,
       /** Date for the stamp when re-developing an older frame. */
       stampDate?: Date,
+      place?: { rollId?: string; frame?: number; reprint?: boolean },
     ) => {
       const takenAt = new Date();
       const stampAt = stampDate ?? takenAt;
@@ -260,6 +278,9 @@ export default function Camera() {
             height: res.height,
             developed: res.blob,
             original: src.original,
+            rollId: place?.rollId,
+            frame: place?.frame,
+            reprint: place?.reprint,
             meta: {
               lens: s.lens,
               ratio: s.ratio,
@@ -275,7 +296,9 @@ export default function Camera() {
           };
           await saveShot(shot);
           setShots((list) => [shot, ...list]);
+          if (place?.frame && !place.reprint) pendingFrames.current = Math.max(0, pendingFrames.current - 1);
         } catch (e) {
+          if (place?.frame && !place.reprint) pendingFrames.current = Math.max(0, pendingFrames.current - 1);
           showToast(`현상하지 못했습니다: ${(e as Error).message}`);
         } finally {
           setDeveloping((d) => d - 1);
@@ -308,15 +331,60 @@ export default function Camera() {
         m.flash ?? 0,
         m.frameAspect,
         new Date(m.takenAt ?? shot.createdAt),
+        { rollId: shot.rollId, frame: shot.frame, reprint: true },
       );
       showToast(`${p.name} 필름으로 다시 현상하고 있어요.`);
     },
     [settings, enqueueDevelop, showToast],
   );
 
+  // ---- rolls ----
+  const activeRoll = rolls.find((r) => !r.sentAt);
+  const framesTaken = useMemo(() => (activeRoll ? shots.filter((s) => s.rollId === activeRoll.id && !s.reprint).length : 0), [shots, activeRoll]);
+  const live2 = useRef({ activeRoll, framesTaken });
+  live2.current = { activeRoll, framesTaken };
+
+  /**
+   * Reserve the next frame on the roll in the camera. Loads a default roll if
+   * the camera is empty; returns null when the roll is used up.
+   */
+  const claimFrame = useCallback(async (): Promise<{ rollId: string; frame: number } | null> => {
+    let { activeRoll: roll } = live2.current;
+    const taken = live2.current.framesTaken + pendingFrames.current;
+    if (!roll) {
+      roll = newRoll(24, 'instant');
+      await saveRoll(roll);
+      setRolls((r) => [roll!, ...r]);
+      live2.current.activeRoll = roll;
+      showToast('카메라에 24컷 롤을 넣었어요. 앨범에서 바꿀 수 있어요.');
+    } else if (taken >= roll.size) {
+      showToast('롤을 다 찍었어요. 현상을 맡기고 새 롤을 넣어 주세요.');
+      setAlbum(true);
+      return null;
+    }
+    pendingFrames.current += 1;
+    return { rollId: roll.id, frame: taken + 1 };
+  }, [showToast]);
+
+  const loadRoll = async (size: Roll['size'], mode: Roll['mode'], name: string) => {
+    const roll = newRoll(size, mode, name);
+    await saveRoll(roll);
+    setRolls((r) => [roll, ...r]);
+    pendingFrames.current = 0;
+    setLoader(null);
+    showToast(`${roll.name}을 넣었어요. ${size}컷을 찍을 수 있어요.`);
+  };
+
+  const updateRoll = async (roll: Roll) => {
+    await saveRoll(roll);
+    setRolls((list) => list.map((r) => (r.id === roll.id ? roll : r)));
+  };
+
   const fire = useCallback(async () => {
     const video = cam.videoRef.current;
     if (!video?.videoWidth) return;
+    const place = await claimFrame();
+    if (!place) return;
     const s = settings;
     const p = profile;
     const flash = flashAmount(s.flash, p, stats);
@@ -365,8 +433,10 @@ export default function Camera() {
       shaderEv,
       useHwFlash || selfieFlash ? Math.min(flash, 0.2) : flash,
       video.videoWidth / video.videoHeight,
+      undefined,
+      place,
     );
-  }, [cam, settings, profile, stats, digitalZoom, shaderEv, enqueueDevelop]);
+  }, [cam, settings, profile, stats, digitalZoom, shaderEv, enqueueDevelop, claimFrame]);
 
   const onShutter = useCallback(() => {
     if (countdown) {
@@ -397,10 +467,13 @@ export default function Camera() {
   }, [countdown, settings.timer, fire]);
 
   /** Photos from the system camera (iPhone full quality) or from the library. */
-  const onFiles = (files: FileList | null, fromCamera: boolean) => {
+  const onFiles = async (files: FileList | null, fromCamera: boolean) => {
     if (!files) return;
     for (const file of Array.from(files)) {
       if (!file.type.startsWith('image/')) continue;
+      // System-camera shots are frames on the roll; library photos go in their own envelope.
+      const place = fromCamera ? await claimFrame() : { rollId: IMPORTED_ROLL };
+      if (!place) return;
       enqueueDevelop(
         async () => {
           const bmp = await decodeBlob(file);
@@ -411,9 +484,47 @@ export default function Camera() {
         1,
         fromCamera ? settings.ev : 0,
         fromCamera ? flashAmount(settings.flash, profile, null) : 0,
+        undefined,
+        undefined,
+        place,
       );
     }
     showToast(fromCamera ? '기본 카메라 사진을 현상하고 있어요.' : `${files.length}장에 ${profile.name} 필름을 입히고 있어요.`);
+  };
+
+  // ---- swipe the viewfinder to change cameras ----
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  const [nameFlash, setNameFlash] = useState<{ name: string; film: string; key: number } | null>(null);
+  useEffect(() => {
+    if (!nameFlash) return;
+    const t = setTimeout(() => setNameFlash(null), 1300);
+    return () => clearTimeout(t);
+  }, [nameFlash]);
+  const switchCamera = (step: number) => {
+    const i = PROFILES.findIndex((p) => p.id === profile.id);
+    const next = PROFILES[(i + step + PROFILES.length) % PROFILES.length];
+    update({ profileId: next.id });
+    setSuggest(null);
+    setNameFlash({ name: next.name, film: next.film, key: Date.now() });
+    haptic(6);
+  };
+  const onFinderDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    swipeStart.current = { x: e.clientX, y: e.clientY };
+  };
+  const onFinderUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const s0 = swipeStart.current;
+    swipeStart.current = null;
+    if (s0) {
+      const dx = e.clientX - s0.x;
+      const dy = e.clientY - s0.y;
+      // A clear horizontal swipe changes camera; anything shorter is a tap to focus.
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        switchCamera(dx < 0 ? 1 : -1);
+        return;
+      }
+      if (Math.hypot(dx, dy) > 12) return;
+    }
+    onFinderTap(e);
   };
 
   const onFinderTap = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -508,7 +619,9 @@ export default function Camera() {
           className={`cam-finder ${settings.facing === 'user' ? 'is-mirror' : ''}`}
           ref={finderRef}
           style={{ '--a': ratio.aspect } as React.CSSProperties}
-          onPointerUp={onFinderTap}
+          onPointerDown={onFinderDown}
+          onPointerUp={onFinderUp}
+          onPointerCancel={() => (swipeStart.current = null)}
         >
           <canvas ref={canvasRef} />
           {settings.grid && <div className="grid" aria-hidden />}
@@ -517,11 +630,17 @@ export default function Camera() {
           )}
           {focus && <div key={focus.key} className="focus" style={{ left: `${focus.x * 100}%`, top: `${focus.y * 100}%` }} aria-hidden />}
           {blink && <div className="blink" aria-hidden />}
+          {nameFlash && (
+            <div key={nameFlash.key} className="name-flash" aria-live="polite">
+              <strong>{nameFlash.name}</strong>
+              <span>{nameFlash.film}</span>
+            </div>
+          )}
           {countdown > 0 && <div className="countdown">{countdown}</div>}
           <div className="finder-info" aria-hidden>
             {flashFires && <span className="led">⚡</span>}
             {stampPreview && <span className="led">{stampPreview}</span>}
-            <span className="led">{String(shots.length + 1).padStart(2, '0')}</span>
+            <span className="led" title="남은 컷">{activeRoll ? String(Math.max(0, activeRoll.size - framesTaken - pendingFrames.current)).padStart(2, '0') : '--'}</span>
           </div>
           {cam.state.status !== 'ready' && (
             <div className="finder-msg">
@@ -557,8 +676,15 @@ export default function Camera() {
       </div>
 
       <footer className="cam-bottom">
-        <button className="last" onClick={() => shots.length && setViewer(true)} aria-label="찍은 사진 보기">
-          {thumb ? <img src={thumb} alt="" /> : null}
+        <button className="last" onClick={() => setAlbum(true)} aria-label="앨범 열기">
+          {activeRoll?.mode === 'wait' && framesTaken > 0 ? (
+            <span className="mini-canister" aria-hidden>
+              {framesTaken}
+            </span>
+          ) : thumb ? (
+            <img src={thumb} alt="" />
+          ) : null}
+          {rolls.some((r) => rollState(r) === 'developed' && !r.openedAt) && <span className="new-dot" aria-hidden />}
           {developing > 0 && <span className="developing">현상 중</span>}
         </button>
         <button className={`shutter ${countdown ? 'is-timer' : ''}`} onClick={onShutter} disabled={cam.state.status !== 'ready'} aria-label={countdown ? '타이머 취소' : '셔터'} />
@@ -592,10 +718,30 @@ export default function Camera() {
           onClose={() => setBag(null)}
         />
       )}
+      {album && (
+        <Album
+          rolls={rolls}
+          shots={shots}
+          activeRoll={activeRoll}
+          onClose={() => setAlbum(false)}
+          onView={(list, index) => setViewer({ ids: list.map((s) => s.id), index })}
+          onLoadRoll={() => setLoader({})}
+          onSend={(roll, readyAt) => {
+            updateRoll({ ...roll, sentAt: Date.now(), readyAt });
+            pendingFrames.current = 0;
+            showToast(readyAt - Date.now() < 60000 ? '현상소에 맡겼어요. 곧 봉투가 도착해요.' : '현상소에 맡겼어요. 내일 아침에 봉투가 도착해요.');
+          }}
+          onOpened={(roll) => {
+            if (!roll.openedAt) updateRoll({ ...roll, openedAt: Date.now() });
+          }}
+        />
+      )}
+      {loader && <RollLoader reason={loader.reason} onLoad={loadRoll} onClose={() => setLoader(null)} />}
       {viewer && (
         <Viewer
-          shots={shots}
-          onClose={() => setViewer(false)}
+          shots={viewer.ids.map((id) => shots.find((s) => s.id === id)).filter((s): s is Shot => !!s)}
+          initialIndex={viewer.index}
+          onClose={() => setViewer(null)}
           onDelete={async (id) => {
             await deleteShot(id);
             setShots((s) => s.filter((x) => x.id !== id));
@@ -767,14 +913,21 @@ function Viewer({
   onClose,
   onDelete,
   onRedevelop,
+  initialIndex = 0,
 }: {
   shots: Shot[];
+  initialIndex?: number;
   onClose: () => void;
   onDelete: (id: string) => Promise<void>;
   onRedevelop: (shot: Shot, profileId: string) => void;
 }) {
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(initialIndex);
   const [picking, setPicking] = useState(false);
+  const stripRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = stripRef.current;
+    if (el && initialIndex) el.scrollLeft = initialIndex * el.clientWidth;
+  }, []); // run once: jump to the tapped frame
   const [compare, setCompare] = useState<string | null>(null);
   const urls = useMemo(() => shots.map((s) => URL.createObjectURL(s.developed)), [shots]);
   useEffect(() => () => urls.forEach((u) => URL.revokeObjectURL(u)), [urls]);
@@ -817,6 +970,7 @@ function Viewer({
       </div>
       <div
         className="viewer-strip"
+        ref={stripRef}
         onScroll={(e) => {
           const el = e.currentTarget;
           setIndex(Math.round(el.scrollLeft / el.clientWidth));

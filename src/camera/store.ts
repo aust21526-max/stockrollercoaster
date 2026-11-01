@@ -13,28 +13,66 @@ export interface Shot {
   original: Blob;
   /** Settings used, so a re-develop can reproduce the frame. */
   meta: Record<string, unknown>;
+  /** Roll this frame belongs to. Older shots have none ("지난 사진"). */
+  rollId?: string;
+  /** Frame number on the roll, 1-based. */
+  frame?: number;
+  /** An extra print from "다시 현상": not a new frame. */
+  reprint?: boolean;
 }
 
+/**
+ * A roll of film. "instant" shows frames as they are taken; "wait" hides them
+ * until the roll is handed to the lab and comes back.
+ */
+export interface Roll {
+  id: string;
+  name: string;
+  size: 24 | 36;
+  mode: 'instant' | 'wait';
+  createdAt: number;
+  /** Set when handed to the lab ("현상 맡기기"). */
+  sentAt?: number;
+  /** When the envelope comes back. Frames of a "wait" roll appear from then. */
+  readyAt?: number;
+  /** First time the developed envelope was opened (for the "새 봉투" badge). */
+  openedAt?: number;
+}
+
+export type RollState = 'shooting' | 'developing' | 'developed';
+export function rollState(roll: Roll, now = Date.now()): RollState {
+  if (!roll.sentAt) return 'shooting';
+  return (roll.readyAt ?? 0) <= now ? 'developed' : 'developing';
+}
+/** Can the frames of this roll be looked at yet? */
+export const rollVisible = (roll: Roll | undefined, now = Date.now()) =>
+  !roll || roll.mode === 'instant' || rollState(roll, now) === 'developed';
+
 const DB = 'film-camera';
-const STORE = 'shots';
+const SHOTS = 'shots';
+const ROLLS = 'rolls';
 
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB, 1);
-    req.onupgradeneeded = () => {
-      const s = req.result.createObjectStore(STORE, { keyPath: 'id' });
-      s.createIndex('createdAt', 'createdAt');
+    const req = indexedDB.open(DB, 2);
+    req.onupgradeneeded = (e) => {
+      const db = req.result;
+      if (e.oldVersion < 1) {
+        const s = db.createObjectStore(SHOTS, { keyPath: 'id' });
+        s.createIndex('createdAt', 'createdAt');
+      }
+      if (e.oldVersion < 2) db.createObjectStore(ROLLS, { keyPath: 'id' });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
 }
 
-async function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+async function tx<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
   const db = await open();
   return new Promise((resolve, reject) => {
-    const t = db.transaction(STORE, mode);
-    const req = fn(t.objectStore(STORE));
+    const t = db.transaction(store, mode);
+    const req = fn(t.objectStore(store));
     t.oncomplete = () => {
       resolve(req.result);
       db.close();
@@ -43,12 +81,37 @@ async function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBReq
   });
 }
 
-export const saveShot = (shot: Shot) => tx('readwrite', (s) => s.put(shot));
-export const deleteShot = (id: string) => tx('readwrite', (s) => s.delete(id));
+export const saveShot = (shot: Shot) => tx(SHOTS, 'readwrite', (s) => s.put(shot));
+export const deleteShot = (id: string) => tx(SHOTS, 'readwrite', (s) => s.delete(id));
+export const saveRoll = (roll: Roll) => tx(ROLLS, 'readwrite', (s) => s.put(roll));
 
 export async function listShots(): Promise<Shot[]> {
-  const all = await tx<Shot[]>('readonly', (s) => s.getAll());
+  const all = await tx<Shot[]>(SHOTS, 'readonly', (s) => s.getAll());
   return all.sort((a, b) => b.createdAt - a.createdAt);
+}
+
+export async function listRolls(): Promise<Roll[]> {
+  const all = await tx<Roll[]>(ROLLS, 'readonly', (s) => s.getAll());
+  return all.sort((a, b) => b.createdAt - a.createdAt);
+}
+
+export function newRoll(size: Roll['size'], mode: Roll['mode'], name?: string): Roll {
+  const now = new Date();
+  return {
+    id: `roll-${now.getTime()}`,
+    name: name?.trim() || `${now.getMonth() + 1}월 ${now.getDate()}일의 롤`,
+    size,
+    mode,
+    createdAt: now.getTime(),
+  };
+}
+
+/** Next morning at 8:00 — "내일 아침에 받기". */
+export function nextMorning(now = new Date()): number {
+  const d = new Date(now);
+  d.setDate(d.getDate() + 1);
+  d.setHours(8, 0, 0, 0);
+  return d.getTime();
 }
 
 /** Ask the browser not to evict our photos under storage pressure. */
