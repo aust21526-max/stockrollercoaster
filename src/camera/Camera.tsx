@@ -5,6 +5,7 @@ import { PROFILES, profileById } from '../engine/profiles';
 import { detectSituations, rankProfiles } from '../engine/recommend';
 import { cropFor, SITUATION_LABELS, type FilmProfile } from '../engine/types';
 import { decodeBlob, develop, grabFrame } from './develop';
+import { useBackClose } from '../back';
 import { CameraBag } from './CameraBag';
 import { CameraBody } from './CameraBody';
 import { Icon } from './icons';
@@ -57,6 +58,12 @@ export default function Camera() {
   /** Frames shot but still developing, so frame numbers stay right during bursts. */
   const pendingFrames = useRef(0);
   const [bag, setBag] = useState<{ snapshot: HTMLCanvasElement | null } | null>(null);
+  // System back closes the top overlay instead of leaving the app.
+  useBackClose(sheet, () => setSheet(false));
+  useBackClose(!!bag, () => setBag(null));
+  useBackClose(album, () => setAlbum(false));
+  useBackClose(!!loader, () => setLoader(null));
+  useBackClose(!!viewer, () => setViewer(null));
   const [toast, setToast] = useState('');
   const [focus, setFocus] = useState<{ x: number; y: number; key: number } | null>(null);
   const [tilt, setTilt] = useState<number | null>(null);
@@ -65,13 +72,10 @@ export default function Camera() {
   const cancelTimer = useRef<(() => void) | null>(null);
 
   // ---- zoom: optical/sensor zoom where the camera exposes it, digital crop otherwise ----
-  const zoomWanted = settings.lens / MAIN_FOCAL;
-  const zoomCap = settings.facing === 'environment' ? cam.caps.zoom : undefined;
-  const hwZoom = zoomCap ? Math.min(Math.max(zoomWanted, zoomCap.min), zoomCap.max) : 1;
-  const digitalZoom = Math.max(1, zoomWanted / hwZoom);
-  useEffect(() => {
-    if (zoomCap && cam.state.status === 'ready') cam.apply({ zoom: hwZoom });
-  }, [hwZoom, zoomCap, cam.state.status]);
+  // Lens = digital crop, always. Phone hardware zoom changes the preview but
+  // full-resolution stills (ImageCapture) often ignore it, so a 50mm frame
+  // would be saved at 26mm. Cropping ourselves keeps preview and photo identical.
+  const digitalZoom = Math.max(1, settings.lens / MAIN_FOCAL);
 
   // ---- EV: hardware exposure compensation where available, the rest in the shader ----
   const evCap = cam.caps.exposureCompensation;
@@ -481,7 +485,8 @@ export default function Camera() {
         },
         settings,
         profile,
-        1,
+        // System-camera shots get the chosen lens too (shoot them at 1x).
+        fromCamera ? digitalZoom : 1,
         fromCamera ? settings.ev : 0,
         fromCamera ? flashAmount(settings.flash, profile, null) : 0,
         undefined,
@@ -593,11 +598,11 @@ export default function Camera() {
       <video ref={cam.videoRef} className="cam-video" playsInline muted autoPlay />
 
       <header className="cam-top">
-        <button className="chip" onClick={() => update({ flash: settings.flash === 'off' ? 'auto' : settings.flash === 'auto' ? 'on' : 'off' })} aria-label="플래시">
-          <Icon name="flash" /> {settings.flash === 'off' ? '끔' : settings.flash === 'auto' ? '자동' : '켬'}
+        <button className={`chip ${settings.flash !== 'off' ? 'is-lit' : ''}`} onClick={() => update({ flash: settings.flash === 'off' ? 'auto' : settings.flash === 'auto' ? 'on' : 'off' })} aria-label={`플래시 ${settings.flash === 'off' ? '끔' : settings.flash === 'auto' ? '자동' : '켬'}`}>
+          <Icon name="flash" /> <span>{settings.flash === 'off' ? '끔' : settings.flash === 'auto' ? '자동' : '켬'}</span>
         </button>
-        <button className="chip" onClick={() => update({ timer: settings.timer === 0 ? 3 : settings.timer === 3 ? 10 : 0 })} aria-label="셀프타이머">
-          <Icon name="timer" /> {settings.timer ? `${settings.timer}초` : '끔'}
+        <button className={`chip ${settings.timer ? 'is-lit' : ''}`} onClick={() => update({ timer: settings.timer === 0 ? 3 : settings.timer === 3 ? 10 : 0 })} aria-label={`셀프타이머 ${settings.timer ? `${settings.timer}초` : '끔'}`}>
+          <Icon name="timer" /> <span>{settings.timer ? `${settings.timer}초` : '끔'}</span>
         </button>
         <button
           className="chip"
@@ -624,6 +629,7 @@ export default function Camera() {
           onPointerCancel={() => (swipeStart.current = null)}
         >
           <canvas ref={canvasRef} />
+          <div className="framelines" aria-hidden />
           {settings.grid && <div className="grid" aria-hidden />}
           {tilt != null && (
             <div className={`level ${Math.abs(tilt) < 1 ? 'is-flat' : ''}`} style={{ transform: `translate(-50%, -50%) rotate(${-tilt}deg)` }} aria-hidden />
@@ -640,7 +646,10 @@ export default function Camera() {
           <div className="finder-info" aria-hidden>
             {flashFires && <span className="led">⚡</span>}
             {stampPreview && <span className="led">{stampPreview}</span>}
-            <span className="led" title="남은 컷">{activeRoll ? String(Math.max(0, activeRoll.size - framesTaken - pendingFrames.current)).padStart(2, '0') : '--'}</span>
+          </div>
+          <div className="counter" title="남은 컷">
+            <span className="counter-mark" aria-hidden />
+            <span className="counter-num">{activeRoll ? String(Math.max(0, activeRoll.size - framesTaken - pendingFrames.current)).padStart(2, '0') : '--'}</span>
           </div>
           {cam.state.status !== 'ready' && (
             <div className="finder-msg">
@@ -657,11 +666,15 @@ export default function Camera() {
         )}
       </div>
 
-      <button className="now-camera" onClick={openBag}>
-        <span className="now-name">{profile.name}</span>
-        <span className="now-iso">ISO {profile.iso}</span>
-        <span className="now-change">바꾸기</span>
-      </button>
+      <CameraStrip
+        current={profile.id}
+        recommended={recommended}
+        onPick={(id) => {
+          update({ profileId: id });
+          setSuggest(null);
+          haptic(6);
+        }}
+      />
 
       <div className="cam-dials">
         <div className="lenses" role="radiogroup" aria-label="렌즈">
@@ -688,8 +701,9 @@ export default function Camera() {
           {developing > 0 && <span className="developing">현상 중</span>}
         </button>
         <button className={`shutter ${countdown ? 'is-timer' : ''}`} onClick={onShutter} disabled={cam.state.status !== 'ready'} aria-label={countdown ? '타이머 취소' : '셔터'} />
-        <button className="body-btn" onClick={openBag} aria-label={`카메라 바꾸기, 지금은 ${profile.name}`}>
-          <CameraBody profileId={profile.id} />
+        <button className="bag-btn" onClick={openBag} aria-label="카메라 가방 열기">
+          <Icon name="bag" />
+          <span>가방</span>
         </button>
       </footer>
 
@@ -754,6 +768,51 @@ export default function Camera() {
 }
 
 // -----------------------------------------------------------------------------
+
+/**
+ * The cameras as a row of small bodies under the viewfinder. Tap to pick one.
+ * Cameras that suit the scene in front of you carry an orange LED; the
+ * "추천" button jumps to the best one.
+ */
+function CameraStrip({ current, recommended, onPick }: { current: string; recommended: string[]; onPick: (id: string) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const currentProfile = profileById(current);
+  // Keep the camera in hand in view (after swipes, bag picks, suggestions).
+  useEffect(() => {
+    const el = ref.current?.querySelector<HTMLElement>(`[data-id="${current}"]`);
+    el?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }, [current]);
+  const best = recommended.find((id) => id !== current);
+  return (
+    <div className="strip-wrap">
+      <div className="strip-label">
+        <strong>{currentProfile.name}</strong>
+        <span>{currentProfile.film}</span>
+        {best && (
+          <button className="strip-rec" onClick={() => onPick(best)}>
+            <span className="led-dot" aria-hidden /> 추천 {profileById(best).name}
+          </button>
+        )}
+      </div>
+      <div className="cam-strip" ref={ref} role="radiogroup" aria-label="카메라">
+        {PROFILES.map((p) => (
+          <button
+            key={p.id}
+            data-id={p.id}
+            role="radio"
+            aria-checked={p.id === current}
+            aria-label={`${p.name}${recommended.includes(p.id) ? ', 지금 장면에 추천' : ''}`}
+            className={`mini ${p.id === current ? 'is-on' : ''}`}
+            onClick={() => onPick(p.id)}
+          >
+            {recommended.includes(p.id) && <span className="led-dot" aria-hidden />}
+            <CameraBody profileId={p.id} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function EvDial({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const drag = useRef<{ x: number; v: number } | null>(null);
@@ -831,7 +890,7 @@ function SettingsSheet({
             <Icon name="camera" />
             <span>
               <strong>기본 카메라로 찍기</strong>
-              <small>{isIOS ? '아이폰에서 가장 선명하게 찍는 방법이에요. 찍은 뒤 지금 필름으로 현상합니다.' : '폰 기본 카메라로 찍고 지금 필름으로 현상합니다.'}</small>
+              <small>{isIOS ? '아이폰에서 가장 선명하게 찍는 방법이에요.' : '폰 기본 카메라로 찍습니다.'} 1배로 찍으면 지금 렌즈와 필름으로 현상해요.</small>
             </span>
             <input type="file" accept="image/*" capture="environment" onChange={(e) => { onFiles(e.target.files, true); onClose(); }} />
           </label>
@@ -924,6 +983,7 @@ function Viewer({
 }) {
   const [index, setIndex] = useState(initialIndex);
   const [picking, setPicking] = useState(false);
+  useBackClose(picking, () => setPicking(false));
   const stripRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = stripRef.current;

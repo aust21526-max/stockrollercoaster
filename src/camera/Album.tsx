@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useBackClose } from '../back';
 import { profileById } from '../engine/profiles';
 import { nextMorning, rollState, rollVisible, type Roll, type Shot } from './store';
 
@@ -43,6 +44,8 @@ export function Album({
   const [now, setNow] = useState(Date.now());
   const [open, setOpen] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  useBackClose(open !== null, () => setOpen(null));
+  useBackClose(sending, () => setSending(false));
 
   // Tick while something is at the lab, so envelopes arrive on their own.
   const anyDeveloping = rolls.some((r) => rollState(r, now) === 'developing');
