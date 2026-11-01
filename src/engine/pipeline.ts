@@ -7,6 +7,7 @@ type Target = { tex: WebGLTexture; fbo: WebGLFramebuffer; w: number; h: number }
 type Program = { prog: WebGLProgram; loc: Map<string, WebGLUniformLocation | null> };
 
 const IDENTITY_CROSSTALK = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+const FULL_FRAME: [number, number, number, number] = [0, 0, 1, 1];
 
 /**
  * WebGL2 film renderer. One instance per canvas.
@@ -88,6 +89,7 @@ export class FilmRenderer {
     this.updateLut(look);
 
     const aspect = outW / outH;
+    const crop = opts.crop ?? FULL_FRAME;
     const prep = this.target('prep', outW, outH);
     const halfW = Math.max(1, Math.round(outW / 2));
     const halfH = Math.max(1, Math.round(outH / 2));
@@ -100,7 +102,7 @@ export class FilmRenderer {
 
     // 1. prep
     {
-      let ev = look.exposure;
+      let ev = look.exposure + (opts.ev ?? 0);
       let wb = whiteBalance(look.temperature, look.tint);
       if (opts.labCorrection && correction) {
         ev += correction.ev;
@@ -114,8 +116,9 @@ export class FilmRenderer {
       gl.uniformMatrix3fv(p.loc.get('uCross')!, true, look.crosstalk.length === 9 ? look.crosstalk : IDENTITY_CROSSTALK);
       gl.uniform3fv(p.loc.get('uMono')!, look.mono ?? [0.2126, 0.7152, 0.0722]);
       gl.uniform1i(p.loc.get('uIsMono')!, look.mono ? 1 : 0);
-      gl.uniform1f(p.loc.get('uFlash')!, look.flash);
+      gl.uniform1f(p.loc.get('uFlash')!, opts.flash ?? look.flash);
       gl.uniform1f(p.loc.get('uAspect')!, aspect);
+      gl.uniform4fv(p.loc.get('uCrop')!, crop);
       this.draw();
     }
 
@@ -179,8 +182,21 @@ export class FilmRenderer {
       gl.uniform1f(u('uGrainSize'), look.grain.size);
       gl.uniform1f(u('uGrainColor'), look.grain.color);
       gl.uniform1f(u('uStrength'), opts.strength);
+      gl.uniform4fv(u('uCrop'), crop);
       this.draw();
     }
+  }
+
+  /** Free the large textures but keep the compiled programs (call after a full-res render). */
+  trim() {
+    const gl = this.gl;
+    for (const t of this.targets.values()) {
+      gl.deleteTexture(t.tex);
+      gl.deleteFramebuffer(t.fbo);
+    }
+    this.targets.clear();
+    if (this.src) gl.deleteTexture(this.src);
+    this.src = null;
   }
 
   dispose() {

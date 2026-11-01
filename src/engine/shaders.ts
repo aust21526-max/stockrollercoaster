@@ -34,8 +34,9 @@ uniform vec3 uMono;
 uniform bool uIsMono;
 uniform float uFlash;
 uniform float uAspect;       // width / height
+uniform vec4 uCrop;          // source uv rect: x, y, w, h
 void main() {
-  vec3 c = texture(uSrc, vUv).rgb;
+  vec3 c = texture(uSrc, uCrop.xy + vUv * uCrop.zw).rgb;
   c *= uWB * uExposure;
   if (uFlash > 0.0) {
     vec2 d = vUv - vec2(0.5, 0.54);
@@ -115,6 +116,7 @@ uniform float uGrainAmount;
 uniform float uGrainSize;    // relative to height, x1000
 uniform float uGrainColor;
 uniform float uStrength;
+uniform vec4 uCrop;
 
 const float HUE_C[9] = float[9](25.0, 55.0, 100.0, 140.0, 195.0, 255.0, 295.0, 335.0, 385.0);
 
@@ -244,7 +246,7 @@ void main() {
   }
 
   // --- strength blend + dither ---
-  vec3 orig = toSrgb(texture(uSrc, uv).rgb);
+  vec3 orig = toSrgb(texture(uSrc, uCrop.xy + uv * uCrop.zw).rgb);
   s = mix(orig, s, uStrength);
   s += (hash(gl_FragCoord.xy + uSeed) - 0.5) / 255.0;
   outColor = vec4(clamp(s, 0.0, 1.0), 1.0);

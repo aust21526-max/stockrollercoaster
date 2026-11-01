@@ -156,4 +156,26 @@ export interface DevelopOptions {
   strength: number;
   /** Seed for grain. Change per frame so grain never repeats. */
   seed: number;
+  /** Source region to develop, normalized [x, y, w, h]. Default: whole frame. */
+  crop?: [number, number, number, number];
+  /** Extra exposure in stops on top of the look (the camera's EV dial). */
+  ev?: number;
+  /** Overrides look.flash (flash mode on the camera). */
+  flash?: number;
+}
+
+/**
+ * Centered crop for a target aspect (w/h) and a digital zoom factor.
+ * Returns the normalized rect and its size in source pixels.
+ */
+export function cropFor(srcW: number, srcH: number, aspect: number, zoom = 1) {
+  let cw = srcW;
+  let ch = srcH;
+  if (srcW / srcH > aspect) cw = srcH * aspect;
+  else ch = srcW / aspect;
+  cw /= Math.max(1, zoom);
+  ch /= Math.max(1, zoom);
+  const w = cw / srcW;
+  const h = ch / srcH;
+  return { rect: [(1 - w) / 2, (1 - h) / 2, w, h] as [number, number, number, number], width: Math.round(cw), height: Math.round(ch) };
 }
