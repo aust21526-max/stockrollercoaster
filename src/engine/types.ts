@@ -67,6 +67,12 @@ export interface LookParams {
   /** 0..1, how much chroma falls off in bright highlights (film shoulder). */
   highlightDesat: number;
   hues: Partial<Record<HueBand, HueAdjust>>;
+  /**
+   * 0..1. Keeps skin hues inside a natural range (Oklab hue ~40–68°) and stops
+   * them losing too much color, however strong the film cast is. This is what
+   * lets a bold look still flatter faces.
+   */
+  skinProtect?: number;
   shadows: SplitTone;
   highlights: SplitTone;
 

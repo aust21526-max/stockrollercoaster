@@ -57,23 +57,28 @@ export function requestPersistence() {
 }
 
 /**
- * Hands the photo to the system: on iPhone the share sheet has "Save Image",
- * on Android it offers Gallery/Photos. Falls back to a download.
+ * Hands photos to the system: on iPhone the share sheet has "Save N Images",
+ * on Android it offers Gallery/Photos. Falls back to downloads.
  */
-export async function exportShot(shot: Shot) {
-  const name = `FILM_${new Date(shot.createdAt).toISOString().replace(/[-:T]/g, '').slice(0, 14)}.jpg`;
-  const file = new File([shot.developed], name, { type: 'image/jpeg' });
-  if (navigator.canShare?.({ files: [file] })) {
+export async function exportShots(shots: Shot[]) {
+  const files = shots.map((shot) => {
+    const name = `FILM_${new Date(shot.createdAt).toISOString().replace(/[-:T]/g, '').slice(0, 14)}_${shot.id.slice(-5)}.jpg`;
+    return new File([shot.developed], name, { type: 'image/jpeg' });
+  });
+  if (navigator.canShare?.({ files })) {
     try {
-      await navigator.share({ files: [file] });
+      await navigator.share({ files });
       return;
     } catch (e) {
       if ((e as DOMException).name === 'AbortError') return;
     }
   }
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(file);
-  a.download = name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  for (const file of files) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(file);
+    a.download = file.name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    await new Promise((res) => setTimeout(res, 250));
+  }
 }

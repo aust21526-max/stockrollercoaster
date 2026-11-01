@@ -5,7 +5,7 @@ import { useId } from 'react';
  * cameras people actually loaded these films into; colors are ours.
  */
 
-type Shape = 'rangefinder' | 'compact' | 'slr' | 'disposable';
+type Shape = 'rangefinder' | 'compact' | 'slr' | 'disposable' | 'instant';
 interface Design {
   shape: Shape;
   body: string;
@@ -23,6 +23,10 @@ export const DESIGNS: Record<string, Design> = {
   flash800: { shape: 'disposable', body: '#f1c22e', leather: '#d6402e', metal: '#2a2a2a', accent: '#2b5fae' },
   tungsten800: { shape: 'compact', body: '#202b45', leather: '#141a2b', metal: '#b9bcc4', accent: '#e24a4a' },
   mono400: { shape: 'rangefinder', body: '#d6d6d1', leather: '#1c1c1c', metal: '#d6d6d1', accent: '#1c1c1c' },
+  instant: { shape: 'instant', body: '#f2f0ea', leather: '#d9d5cb', metal: '#c9c6bd', accent: '#e68a5c' },
+  bright: { shape: 'compact', body: '#aebdcb', leather: '#5e6c79', metal: '#eef1f3', accent: '#e05a3a' },
+  golden: { shape: 'rangefinder', body: '#c48d4d', leather: '#4a2f1d', metal: '#e8dfcc', accent: '#2a1a10' },
+  summer: { shape: 'compact', body: '#86bde2', leather: '#f3f0e6', metal: '#f6f4ee', accent: '#f2c230' },
 };
 
 function Lens({ id, cx, cy, r, metal }: { id: string; cx: number; cy: number; r: number; metal: string }) {
@@ -112,6 +116,22 @@ export function CameraBody({ profileId, className }: { profileId: string; classN
           <text x="82" y="95" fontSize="7" textAnchor="middle" fill="#222" fontFamily="sans-serif" fontWeight="700">ISO 800 · 27</text>
           <circle cx="104" cy="60" r="19" fill="#2b2b2b" />
           <Lens id={id} cx={104} cy={60} r={15} metal="#3a3a3a" />
+        </g>
+      );
+      break;
+    case 'instant':
+      art = (
+        <g>
+          <rect x="38" y="10" width="124" height="108" rx="18" fill={d.body} />
+          <rect x="38" y="92" width="124" height="26" rx="0" fill={d.leather} />
+          <path d="M38 92 H162 V100 a18 18 0 0 1 -18 18 H56 a18 18 0 0 1 -18 -18 Z" fill={d.leather} />
+          <rect x="38" y="10" width="124" height="108" rx="18" fill={`url(#${id}-shade)`} />
+          <rect x="62" y="14" width="76" height="4" rx="2" fill="#2a2a2a" opacity=".55" />
+          <rect x="120" y="24" width="32" height="18" rx="3" fill="#fbfaf6" stroke="rgba(0,0,0,.2)" />
+          <rect x="50" y="26" width="16" height="12" rx="2" fill="#1d222b" />
+          <circle cx="100" cy="64" r="34" fill="rgba(0,0,0,.08)" />
+          <Lens id={id} cx={100} cy={64} r={28} metal={d.metal} />
+          <circle cx="146" cy="104" r="5" fill={d.accent} />
         </g>
       );
       break;

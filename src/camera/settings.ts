@@ -33,6 +33,8 @@ export interface CameraSettings {
   facing: 'environment' | 'user';
   /** 12MP camera stream: sharper in-app iPhone shots, heavier live preview. */
   hiRes: boolean;
+  /** Film strength, 0.4..1. */
+  strength: number;
 }
 
 const DEFAULTS: CameraSettings = {
@@ -50,6 +52,7 @@ const DEFAULTS: CameraSettings = {
   labCorrection: true,
   facing: 'environment',
   hiRes: false,
+  strength: 1,
 };
 
 const KEY = 'camera.settings.v1';

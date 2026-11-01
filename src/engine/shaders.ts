@@ -111,6 +111,7 @@ uniform float uShadowDesat;
 uniform float uHighlightDesat;
 uniform vec3 uShadowTone;    // (cos, sin, amount) in Oklab ab
 uniform vec3 uHighlightTone;
+uniform float uSkin;
 
 uniform float uGrainAmount;
 uniform float uGrainSize;    // relative to height, x1000
@@ -225,6 +226,17 @@ void main() {
     C *= uSat;
     C *= 1.0 - uShadowDesat * (1.0 - smoothstep(0.05, 0.45, L));
     C *= 1.0 - uHighlightDesat * smoothstep(0.72, 1.0, L);
+  }
+  if (!uIsMono && uSkin > 0.0) {
+    // Skin: medium-light, moderately saturated, red-orange-yellow. Pull its hue back
+    // into the natural band and keep at least most of its original chroma.
+    float h0 = degrees(atan(lab.z, lab.y));
+    float c0 = length(lab.yz);
+    float inBand = smoothstep(15.0, 35.0, h0) * (1.0 - smoothstep(80.0, 100.0, h0));
+    float skinLike = inBand * smoothstep(0.02, 0.05, c0) * (1.0 - smoothstep(0.16, 0.22, c0)) * smoothstep(0.35, 0.5, lab.x);
+    float w = uSkin * skinLike;
+    h = mix(h, clamp(h, 40.0, 68.0), w);
+    C = mix(C, max(C, c0 * 0.9), w);
   }
   vec2 ab = C * vec2(cos(radians(h)), sin(radians(h)));
   float ws = 1.0 - smoothstep(0.0, 0.6, L);

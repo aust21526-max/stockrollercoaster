@@ -25,6 +25,8 @@ export interface DevelopRequest {
   ev: number;
   flash?: number;
   labCorrection: boolean;
+  /** 0..1 film strength (blend with the original). */
+  strength?: number;
   /** Burned in after developing, or null. */
   stamp: ((g: CanvasRenderingContext2D, w: number, h: number) => void) | null;
 }
@@ -47,7 +49,7 @@ export async function develop(req: DevelopRequest): Promise<{ blob: Blob; width:
     req.profile.look,
     {
       labCorrection: req.labCorrection,
-      strength: 1,
+      strength: req.strength ?? 1,
       seed: Math.floor(Math.random() * 1000),
       crop: crop.rect,
       ev: req.ev,
