@@ -1,0 +1,8 @@
+// Cloudflare Workers static-assets deploy for the built PWA (dist/).
+{
+  "name": "stockrollercoaster",
+  "compatibility_date": "2026-10-23",
+  "assets": {
+    "directory": "./dist"
+  }
+}
