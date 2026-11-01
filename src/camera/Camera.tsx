@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { analyzeScene, labCorrection, type LabCorrection, type SceneStats } from '../engine/analyze';
 import { FilmRenderer } from '../engine/pipeline';
-import { profileById } from '../engine/profiles';
+import { PROFILES, profileById } from '../engine/profiles';
 import { detectSituations, rankProfiles } from '../engine/recommend';
 import { cropFor, SITUATION_LABELS, type FilmProfile } from '../engine/types';
 import { decodeBlob, develop, grabFrame } from './develop';
@@ -11,7 +11,7 @@ import { Icon } from './icons';
 import { ddayCount, LENSES, MAIN_FOCAL, RATIOS, useSettings, type CameraSettings, type FlashMode } from './settings';
 import { haptic, shutterSound } from './sound';
 import { drawStamp, stampText } from './stamp';
-import { deleteShot, exportShot, listShots, requestPersistence, saveShot, type Shot } from './store';
+import { deleteShot, exportShots, listShots, requestPersistence, saveShot, type Shot } from './store';
 import { useCamera } from './useCamera';
 import './camera.css';
 
@@ -47,6 +47,7 @@ export default function Camera() {
   const [developing, setDeveloping] = useState(0);
   const [countdown, setCountdown] = useState(0);
   const [blink, setBlink] = useState(false);
+  const [screenFlash, setScreenFlash] = useState(false);
   const [sheet, setSheet] = useState(false);
   const [viewer, setViewer] = useState(false);
   const [bag, setBag] = useState<{ snapshot: HTMLCanvasElement | null } | null>(null);
@@ -125,7 +126,7 @@ export default function Camera() {
       const k = Math.min(1, PREVIEW_MAX / Math.max(w, h), crop.width / w) * scale;
       w = Math.max(2, Math.round(w * k));
       h = Math.max(2, Math.round(h * k));
-      r.render(p.look, { labCorrection: s.labCorrection, strength: 1, seed: 7, crop: crop.rect, ev: shaderEv, flash: 0, fast: true }, correctionRef.current, w, h);
+      r.render(p.look, { labCorrection: s.labCorrection, strength: s.strength, seed: 7, crop: crop.rect, ev: shaderEv, flash: 0, fast: true }, correctionRef.current, w, h);
     };
     // Render exactly once per camera frame where the browser supports it.
     if (video.requestVideoFrameCallback) {
@@ -226,13 +227,16 @@ export default function Camera() {
       ev: number,
       flash: number,
       frameAspect?: number,
+      /** Date for the stamp when re-developing an older frame. */
+      stampDate?: Date,
     ) => {
       const takenAt = new Date();
+      const stampAt = stampDate ?? takenAt;
       setDeveloping((d) => d + 1);
       queue.current = queue.current.then(async () => {
         try {
           const src = await getSource();
-          const text = s.stamp === 'off' ? null : stampText(s.stamp, takenAt, ddayCount(s.ddayStart, takenAt));
+          const text = s.stamp === 'off' ? null : stampText(s.stamp, stampAt, ddayCount(s.ddayStart, stampAt));
           const res = await develop({
             source: src.source,
             width: src.width,
@@ -243,6 +247,7 @@ export default function Camera() {
             ev,
             flash,
             frameAspect,
+            strength: s.strength,
             labCorrection: s.labCorrection,
             stamp: text ? (g, w, h) => drawStamp(g, text, w, h) : null,
           });
@@ -255,7 +260,18 @@ export default function Camera() {
             height: res.height,
             developed: res.blob,
             original: src.original,
-            meta: { lens: s.lens, ratio: s.ratio, ev, flash, stamp: s.stamp, labCorrection: s.labCorrection, zoom },
+            meta: {
+              lens: s.lens,
+              ratio: s.ratio,
+              ev,
+              flash,
+              stamp: s.stamp,
+              labCorrection: s.labCorrection,
+              zoom,
+              frameAspect,
+              strength: s.strength,
+              takenAt: stampAt.getTime(),
+            },
           };
           await saveShot(shot);
           setShots((list) => [shot, ...list]);
@@ -267,6 +283,35 @@ export default function Camera() {
       });
     },
     [showToast],
+  );
+
+  /** Develop a stored original again with another camera, keeping the frame's own settings. */
+  const redevelop = useCallback(
+    (shot: Shot, profileId: string) => {
+      const m = shot.meta as Partial<{ ratio: CameraSettings['ratio']; stamp: CameraSettings['stamp']; labCorrection: boolean; ev: number; flash: number; zoom: number; frameAspect: number; strength: number; takenAt: number }>;
+      const p = profileById(profileId);
+      enqueueDevelop(
+        async () => {
+          const bmp = await decodeBlob(shot.original);
+          return { source: bmp, width: bmp.width, height: bmp.height, original: shot.original, cleanup: () => bmp.close() };
+        },
+        {
+          ...settings,
+          ratio: m.ratio ?? settings.ratio,
+          stamp: m.stamp ?? settings.stamp,
+          labCorrection: m.labCorrection ?? settings.labCorrection,
+          strength: m.strength ?? settings.strength,
+        },
+        p,
+        m.zoom ?? 1,
+        m.ev ?? 0,
+        m.flash ?? 0,
+        m.frameAspect,
+        new Date(m.takenAt ?? shot.createdAt),
+      );
+      showToast(`${p.name} 필름으로 다시 현상하고 있어요.`);
+    },
+    [settings, enqueueDevelop, showToast],
   );
 
   const fire = useCallback(async () => {
@@ -281,7 +326,14 @@ export default function Camera() {
     setBlink(true);
     setTimeout(() => setBlink(false), 140);
 
+    // Front camera has no flash: light the face with a white screen, like the phone's own selfie flash.
+    const selfieFlash = flash > 0 && s.facing === 'user';
+    if (selfieFlash) {
+      setScreenFlash(true);
+      await new Promise((res) => setTimeout(res, 350));
+    }
     const fallbackFrame = cam.caps.stills && s.facing === 'environment' ? null : await grabFrame(video);
+    if (selfieFlash) setScreenFlash(false);
     const portrait = video.videoHeight > video.videoWidth;
     enqueueDevelop(
       async () => {
@@ -311,7 +363,7 @@ export default function Camera() {
       p,
       digitalZoom,
       shaderEv,
-      useHwFlash ? Math.min(flash, 0.2) : flash,
+      useHwFlash || selfieFlash ? Math.min(flash, 0.2) : flash,
       video.videoWidth / video.videoHeight,
     );
   }, [cam, settings, profile, stats, digitalZoom, shaderEv, enqueueDevelop]);
@@ -515,6 +567,7 @@ export default function Camera() {
         </button>
       </footer>
 
+      {screenFlash && <div className="screen-flash" aria-hidden />}
       {toast && <div className="toast" role="status">{toast}</div>}
 
       {sheet && (
@@ -547,6 +600,7 @@ export default function Camera() {
             await deleteShot(id);
             setShots((s) => s.filter((x) => x.id !== id));
           }}
+          onRedevelop={redevelop}
         />
       )}
     </div>
@@ -664,6 +718,17 @@ function SettingsSheet({
         </div>
 
         <div className="group">
+          <label className="strength">
+            <span>
+              필름 강도
+              <small>낮추면 원본에 가까워져요.</small>
+            </span>
+            <input type="range" min={0.4} max={1} step={0.05} value={settings.strength} onChange={(e) => update({ strength: +e.target.value })} />
+            <output>{Math.round(settings.strength * 100)}%</output>
+          </label>
+        </div>
+
+        <div className="group">
           <Toggle label="현상소 보정" hint="컷마다 노출과 색을 잡아 줍니다. 끄면 필름 그대로 나와요." on={settings.labCorrection} onChange={(v) => update({ labCorrection: v })} />
           <Toggle label="격자" on={settings.grid} onChange={(v) => update({ grid: v })} />
           <Toggle label="수평계" on={settings.level} onChange={() => onLevel()} />
@@ -697,8 +762,20 @@ function Toggle({ label, hint, on, onChange }: { label: string; hint?: string; o
   );
 }
 
-function Viewer({ shots, onClose, onDelete }: { shots: Shot[]; onClose: () => void; onDelete: (id: string) => Promise<void> }) {
+function Viewer({
+  shots,
+  onClose,
+  onDelete,
+  onRedevelop,
+}: {
+  shots: Shot[];
+  onClose: () => void;
+  onDelete: (id: string) => Promise<void>;
+  onRedevelop: (shot: Shot, profileId: string) => void;
+}) {
   const [index, setIndex] = useState(0);
+  const [picking, setPicking] = useState(false);
+  const [compare, setCompare] = useState<string | null>(null);
   const urls = useMemo(() => shots.map((s) => URL.createObjectURL(s.developed)), [shots]);
   useEffect(() => () => urls.forEach((u) => URL.revokeObjectURL(u)), [urls]);
   const shot = shots[Math.min(index, shots.length - 1)];
@@ -706,7 +783,25 @@ function Viewer({ shots, onClose, onDelete }: { shots: Shot[]; onClose: () => vo
     if (!shots.length) onClose();
   }, [shots.length, onClose]);
   if (!shot) return null;
+
   const date = new Date(shot.createdAt);
+  const meta = shot.meta as { lens?: number; ev?: number; flash?: number; ratio?: string; zoom?: number };
+  const info = [
+    meta.lens ? `${meta.lens}mm` : null,
+    meta.ev ? `노출 ${meta.ev > 0 ? '+' : ''}${meta.ev.toFixed(1)}` : null,
+    meta.flash ? '플래시' : null,
+  ].filter(Boolean);
+  const today = shots.filter((s) => new Date(s.createdAt).toDateString() === new Date().toDateString());
+
+  // Hold to see the original. The original is the uncropped frame, so show it
+  // centered and cropped like the developed photo.
+  const startCompare = () => setCompare(URL.createObjectURL(shot.original));
+  const endCompare = () =>
+    setCompare((u) => {
+      if (u) URL.revokeObjectURL(u);
+      return null;
+    });
+
   return (
     <div className="viewer" role="dialog" aria-label="찍은 사진">
       <div className="viewer-head">
@@ -715,6 +810,7 @@ function Viewer({ shots, onClose, onDelete }: { shots: Shot[]; onClose: () => vo
           <strong>{profileById(shot.profileId).name}</strong>
           <small>
             {date.getMonth() + 1}월 {date.getDate()}일 {String(date.getHours()).padStart(2, '0')}:{String(date.getMinutes()).padStart(2, '0')}
+            {info.length ? `, ${info.join(', ')}` : ''}
           </small>
         </span>
         <span className="dim">{index + 1}/{shots.length}</span>
@@ -728,12 +824,30 @@ function Viewer({ shots, onClose, onDelete }: { shots: Shot[]; onClose: () => vo
       >
         {urls.map((u, i) => (
           <div className="viewer-slide" key={shots[i].id}>
-            <img src={u} alt="" loading={i < 3 ? 'eager' : 'lazy'} />
+            <div
+              className="viewer-photo"
+              style={{ aspectRatio: `${shots[i].width} / ${shots[i].height}` }}
+              onPointerDown={i === index ? startCompare : undefined}
+              onPointerUp={endCompare}
+              onPointerLeave={endCompare}
+              onPointerCancel={endCompare}
+              onContextMenu={(e) => e.preventDefault()}
+            >
+              <img src={u} alt="" loading={i < 3 ? 'eager' : 'lazy'} draggable={false} />
+              {compare && i === index && (
+                <>
+                  <img className="viewer-original" src={compare} alt="" draggable={false} style={{ transform: `scale(${(shots[i].meta as { zoom?: number }).zoom ?? 1})` }} />
+                  <span className="viewer-badge">원본</span>
+                </>
+              )}
+            </div>
           </div>
         ))}
       </div>
+      <p className="viewer-hint">사진을 길게 누르면 원본과 비교할 수 있어요.</p>
       <div className="viewer-actions">
-        <button onClick={() => exportShot(shot)}>사진 앱에 저장</button>
+        <button onClick={() => exportShots([shot])}>사진 앱에 저장</button>
+        <button onClick={() => setPicking(true)}>다시 현상</button>
         <button
           className="danger"
           onClick={() => {
@@ -743,6 +857,39 @@ function Viewer({ shots, onClose, onDelete }: { shots: Shot[]; onClose: () => vo
           삭제
         </button>
       </div>
+      {today.length > 1 && (
+        <button className="viewer-all" onClick={() => exportShots(today)}>
+          오늘 찍은 {today.length}장 모두 저장
+        </button>
+      )}
+
+      {picking && (
+        <div className="sheet-backdrop" onClick={() => setPicking(false)}>
+          <section className="sheet" role="dialog" aria-label="다른 카메라로 다시 현상" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-head">
+              <h2>다른 카메라로 다시 현상</h2>
+              <button className="text" onClick={() => setPicking(false)}>닫기</button>
+            </div>
+            <p className="sheet-note">같은 순간을 다른 필름으로 한 장 더 현상합니다. 지금 사진은 그대로 남아요.</p>
+            <div className="redevelop-grid">
+              {PROFILES.filter((p) => p.id !== shot.profileId).map((p) => (
+                <button
+                  key={p.id}
+                  className="redevelop-item"
+                  onClick={() => {
+                    onRedevelop(shot, p.id);
+                    setPicking(false);
+                    onClose();
+                  }}
+                >
+                  <CameraBody profileId={p.id} />
+                  <span>{p.name}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

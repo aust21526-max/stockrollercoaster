@@ -60,6 +60,15 @@ export class FilmRenderer {
   /** Upload a photo or a video frame. Call again each frame for live preview. */
   setSource(source: TexImageSource, width: number, height: number, mipmaps = true) {
     const gl = this.gl;
+    // WebGL ignores UNPACK_FLIP_Y for ImageBitmap (and VideoFrame) sources, which
+    // would leave decoded photos upside down. Route them through a canvas.
+    if ((typeof ImageBitmap !== 'undefined' && source instanceof ImageBitmap) || (typeof VideoFrame !== 'undefined' && source instanceof VideoFrame)) {
+      const c = document.createElement('canvas');
+      c.width = width;
+      c.height = height;
+      c.getContext('2d')!.drawImage(source as CanvasImageSource, 0, 0, width, height);
+      source = c;
+    }
     if (!this.src) this.src = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, this.src);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -177,6 +186,7 @@ export class FilmRenderer {
       });
       gl.uniform3fv(u('uHueAdj'), hues);
       gl.uniform1f(u('uSat'), look.saturation);
+      gl.uniform1f(u('uSkin'), look.skinProtect ?? 0.5);
       gl.uniform1f(u('uShadowDesat'), look.shadowDesat);
       gl.uniform1f(u('uHighlightDesat'), look.highlightDesat);
       gl.uniform3fv(u('uShadowTone'), toneVec(look.shadows.hue, look.shadows.amount));
