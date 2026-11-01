@@ -35,7 +35,7 @@ export type CameraState =
  * Owns the camera stream. iPhone Safari has no ImageCapture, so stills there
  * come from the video frame (or from the system camera, see Camera.tsx).
  */
-export function useCamera(facing: 'environment' | 'user') {
+export function useCamera(facing: 'environment' | 'user', hiRes: boolean) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const trackRef = useRef<MediaStreamTrack | null>(null);
   const captureRef = useRef<ImageCaptureLike | null>(null);
@@ -56,9 +56,12 @@ export function useCamera(facing: 'environment' | 'user') {
           audio: false,
           video: {
             facingMode: { ideal: facing },
-            // Ask for the sensor's native 4:3 at the highest resolution; the browser picks the closest.
-            width: { ideal: 4032 },
-            height: { ideal: 3024 },
+            // Native 4:3. Uploading every 12MP video frame to the GPU is what makes a
+            // live preview stutter (iPhone Safari copies frames on the CPU), so the
+            // default stream is 1920x1440. Android stills still come from
+            // ImageCapture at full sensor resolution regardless of this.
+            width: { ideal: hiRes ? 4032 : 1920 },
+            height: { ideal: hiRes ? 3024 : 1440 },
             aspectRatio: { ideal: 4 / 3 },
             frameRate: { ideal: 30, max: 30 },
           },
@@ -110,7 +113,7 @@ export function useCamera(facing: 'environment' | 'user') {
       trackRef.current = null;
       captureRef.current = null;
     };
-  }, [facing]);
+  }, [facing, hiRes]);
 
   const apply = useCallback(async (advanced: Record<string, unknown>) => {
     const track = trackRef.current;

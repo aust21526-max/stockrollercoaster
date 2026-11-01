@@ -71,13 +71,11 @@
   border-radius: 18px; padding: 8px 14px !important; font-size: 13px; white-space: nowrap;
 }
 
-/* ---- film strip ---- */
-.films { display: flex; gap: 4px; overflow-x: auto; padding: 12px 16px 4px; scrollbar-width: none; scroll-snap-type: x proximity; }
-.films::-webkit-scrollbar { display: none; }
-.film { flex: none; display: flex; align-items: baseline; gap: 6px; padding: 8px 12px !important; border-radius: 4px; color: var(--dim) !important; scroll-snap-align: center; }
-.film-name { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
-.film-iso { font-size: 11px; font-variant-numeric: tabular-nums; }
-.film.is-on { color: #111 !important; background: var(--metal) !important; }
+/* ---- current camera ---- */
+.now-camera { display: flex; align-items: baseline; gap: 8px; margin: 12px auto 2px; padding: 4px 10px !important; }
+.now-name { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.now-iso { font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.now-change { font-size: 11px; color: var(--dim); text-decoration: underline; text-underline-offset: 3px; }
 
 /* ---- lens + EV ---- */
 .cam-dials { display: flex; align-items: center; gap: 16px; padding: 8px 16px; }
@@ -109,7 +107,9 @@
 .shutter:active { transform: scale(.94); }
 .shutter:disabled { opacity: .35; }
 .shutter.is-timer { box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 4px #000, 0 0 0 5px var(--led); }
-.flip { justify-self: end; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--plate) !important; }
+.body-btn { justify-self: end; width: 84px; height: 56px; display: grid; place-items: center; transition: transform .15s; }
+.body-btn svg { width: 100%; height: 100%; filter: drop-shadow(0 2px 6px rgba(0,0,0,.6)); }
+.body-btn:active { transform: scale(.94) rotate(-3deg); }
 
 .toast {
   position: fixed; left: 50%; bottom: calc(150px + env(safe-area-inset-bottom)); transform: translateX(-50%);
@@ -162,3 +162,48 @@
 .viewer-actions button { flex: 1; height: 46px; border-radius: 10px; background: var(--plate) !important; font-size: 15px; }
 .viewer-actions button:first-child { background: var(--ink) !important; color: #111 !important; font-weight: 600; }
 .viewer-actions .danger { flex: 0 0 88px; color: #ff9b8a !important; }
+
+/* ---- camera bag ----
+ * The inside of a padded camera bag: felt-dark compartments, each holding one
+ * body. The hero is the scene you are pointing at, seen through that camera.
+ */
+.bag {
+  --felt: #1d1c1a;
+  --slot: #262522;
+  --slot-edge: #33312d;
+  position: fixed; inset: 0; z-index: 15; overflow-y: auto; background: var(--felt);
+  padding-bottom: env(safe-area-inset-bottom);
+  animation: bag-in .28s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes bag-in { from { transform: translateY(32px); opacity: 0; } }
+.bag-hero { position: relative; aspect-ratio: 4 / 5; max-height: 62dvh; width: 100%; overflow: hidden; background: #000; }
+.bag-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: develop .5s ease-out; }
+.bag-photo.is-empty { background: radial-gradient(120% 90% at 30% 20%, #3a342b, #0d0c0b); }
+@keyframes develop { from { opacity: 0; filter: brightness(1.6) saturate(.3); } }
+.bag-hero-shade { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,.45), transparent 22%, transparent 50%, rgba(0,0,0,.78)); }
+.bag-close { position: absolute; top: calc(10px + env(safe-area-inset-top)); left: 14px; font-size: 14px; padding: 6px 10px !important; color: #fff; }
+.bag-hero-text { position: absolute; left: 20px; right: 20px; bottom: 18px; }
+.bag-hero-text h2, .bag-film { padding-right: 120px; }
+.bag-film { display: flex; gap: 10px; margin: 0 0 4px; font-size: 12px; color: rgba(255,255,255,.75); }
+.bag-hero-text h2 { margin: 0; font-size: 34px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+.bag-tagline { margin: 8px 0 0; font-family: 'Gowun Batang', serif; font-size: 15px; line-height: 1.55; color: rgba(255,255,255,.92); }
+.bag-hero-body { position: absolute; right: 12px; bottom: 74px; width: 112px; filter: drop-shadow(0 6px 14px rgba(0,0,0,.7)); }
+
+.bag-detail { padding: 16px 20px 6px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 1.55; }
+.bag-detail p { margin: 0; color: #d9d6cf; }
+.bag-label { display: inline-block; min-width: 76px; color: var(--dim); font-size: 12px; }
+.bag-pick { margin-top: 8px; height: 50px; border-radius: 12px; background: var(--metal) !important; color: #111 !important; font-weight: 700 !important; font-size: 16px !important; }
+
+.bag-slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 18px 16px 28px; }
+.slot {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 8px 12px !important;
+  background: var(--slot) !important; border-radius: 14px;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.04), inset 0 -3px 8px rgba(0,0,0,.35), 0 0 0 1px var(--slot-edge);
+  transition: transform .15s, box-shadow .15s;
+}
+.slot.is-focus { box-shadow: inset 0 2px 0 rgba(255,255,255,.06), 0 0 0 1.5px #e9e7e1; }
+.slot:active { transform: scale(.97); }
+.slot-body { width: 82%; height: auto; margin-bottom: 6px; transition: transform .2s; }
+.slot.is-focus .slot-body { transform: translateY(-3px) rotate(-2deg); }
+.slot-name { font-size: 14px; font-weight: 600; }
+.slot-meta { font-size: 11px; color: var(--dim); }

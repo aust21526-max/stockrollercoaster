@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { analyzeScene, labCorrection, type LabCorrection, type SceneStats } from '../engine/analyze';
 import { FilmRenderer } from '../engine/pipeline';
-import { PROFILES, profileById } from '../engine/profiles';
+import { profileById } from '../engine/profiles';
 import { detectSituations, rankProfiles } from '../engine/recommend';
 import { cropFor, SITUATION_LABELS, type FilmProfile } from '../engine/types';
 import { decodeBlob, develop, grabFrame } from './develop';
+import { CameraBag } from './CameraBag';
+import { CameraBody } from './CameraBody';
 import { Icon } from './icons';
 import { ddayCount, LENSES, MAIN_FOCAL, RATIOS, useSettings, type CameraSettings, type FlashMode } from './settings';
 import { haptic, shutterSound } from './sound';
@@ -13,7 +15,8 @@ import { deleteShot, exportShot, listShots, requestPersistence, saveShot, type S
 import { useCamera } from './useCamera';
 import './camera.css';
 
-const PREVIEW_MAX = 1280;
+/** Live preview long-side cap in device pixels. Adaptive scale works below this. */
+const PREVIEW_MAX = 1080;
 const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 /** Flash strength for the film simulation, or 0. */
@@ -29,7 +32,7 @@ function flashAmount(mode: FlashMode, profile: FilmProfile, stats: SceneStats | 
 export default function Camera() {
   const [settings, update] = useSettings();
   const profile = profileById(settings.profileId);
-  const cam = useCamera(settings.facing);
+  const cam = useCamera(settings.facing, settings.hiRes);
   const ratio = RATIOS.find((r) => r.id === settings.ratio) ?? RATIOS[0];
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -46,6 +49,7 @@ export default function Camera() {
   const [blink, setBlink] = useState(false);
   const [sheet, setSheet] = useState(false);
   const [viewer, setViewer] = useState(false);
+  const [bag, setBag] = useState<{ snapshot: HTMLCanvasElement | null } | null>(null);
   const [toast, setToast] = useState('');
   const [focus, setFocus] = useState<{ x: number; y: number; key: number } | null>(null);
   const [tilt, setTilt] = useState<number | null>(null);
@@ -88,17 +92,27 @@ export default function Camera() {
   // ---- live preview ----
   useEffect(() => {
     if (cam.state.status !== 'ready') return;
-    let raf = 0;
+    const video = cam.videoRef.current as (HTMLVideoElement & { requestVideoFrameCallback?: (cb: () => void) => number; cancelVideoFrameCallback?: (id: number) => void }) | null;
+    if (!video) return;
+    let stopped = false;
+    let handle = 0;
     let lastFrame = -1;
-    const loop = () => {
-      raf = requestAnimationFrame(loop);
-      const video = cam.videoRef.current;
+    // Adaptive resolution: shrink the preview when frames take too long, grow back when there is headroom.
+    let scale = 1;
+    let avg = 16;
+    let last = performance.now();
+    const draw = () => {
       const r = rendererRef.current;
       const finder = finderRef.current;
-      if (!video || !r || !finder || video.readyState < 2 || !video.videoWidth) return;
-      // Only re-render when the camera delivered a new frame.
+      if (!r || !finder || video.readyState < 2 || !video.videoWidth) return;
       if (video.currentTime === lastFrame) return;
       lastFrame = video.currentTime;
+      const now = performance.now();
+      avg = avg * 0.9 + (now - last) * 0.1;
+      last = now;
+      if (avg > 45 && scale > 0.5) scale = Math.max(0.5, scale - 0.05);
+      else if (avg < 36 && scale < 1) scale = Math.min(1, scale + 0.02);
+
       const { settings: s, profile: p, digitalZoom: z, shaderEv, aspect } = live.current;
       const vw = video.videoWidth;
       const vh = video.videoHeight;
@@ -108,13 +122,34 @@ export default function Camera() {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       let w = Math.round(box.width * dpr);
       let h = Math.round(w / aspect);
-      const k = Math.min(1, PREVIEW_MAX / Math.max(w, h), crop.width / w);
+      const k = Math.min(1, PREVIEW_MAX / Math.max(w, h), crop.width / w) * scale;
       w = Math.max(2, Math.round(w * k));
       h = Math.max(2, Math.round(h * k));
-      r.render(p.look, { labCorrection: s.labCorrection, strength: 1, seed: 7, crop: crop.rect, ev: shaderEv, flash: 0 }, correctionRef.current, w, h);
+      r.render(p.look, { labCorrection: s.labCorrection, strength: 1, seed: 7, crop: crop.rect, ev: shaderEv, flash: 0, fast: true }, correctionRef.current, w, h);
     };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    // Render exactly once per camera frame where the browser supports it.
+    if (video.requestVideoFrameCallback) {
+      const onFrame = () => {
+        if (stopped) return;
+        draw();
+        handle = video.requestVideoFrameCallback!(onFrame);
+      };
+      handle = video.requestVideoFrameCallback(onFrame);
+      return () => {
+        stopped = true;
+        video.cancelVideoFrameCallback?.(handle);
+      };
+    }
+    const loop = () => {
+      if (stopped) return;
+      draw();
+      handle = requestAnimationFrame(loop);
+    };
+    handle = requestAnimationFrame(loop);
+    return () => {
+      stopped = true;
+      cancelAnimationFrame(handle);
+    };
   }, [cam.state.status, cam.videoRef]);
 
   // ---- scene analysis, once a second ----
@@ -366,6 +401,29 @@ export default function Camera() {
   const dday = ddayCount(settings.ddayStart);
   const stampPreview = settings.stamp === 'off' ? null : stampText(settings.stamp, new Date(), dday);
   const situations = useMemo(() => (stats ? detectSituations(stats, new Date().getHours()) : []), [stats]);
+  const recommended = useMemo(() => rankProfiles(situations).slice(0, 2).map((r) => r.profile.id), [situations]);
+
+  /** Open the bag with a small frame of the current scene, so every camera can preview it. */
+  const openBag = () => {
+    const video = cam.videoRef.current;
+    let snapshot: HTMLCanvasElement | null = null;
+    if (video?.videoWidth) {
+      const c = cropFor(video.videoWidth, video.videoHeight, ratio.aspect, digitalZoom);
+      const [x, y, w, h] = c.rect;
+      const outW = 640;
+      const outH = Math.round(outW / ratio.aspect);
+      snapshot = document.createElement('canvas');
+      snapshot.width = outW;
+      snapshot.height = outH;
+      const g = snapshot.getContext('2d')!;
+      if (settings.facing === 'user') {
+        g.translate(outW, 0);
+        g.scale(-1, 1);
+      }
+      g.drawImage(video, x * video.videoWidth, y * video.videoHeight, w * video.videoWidth, h * video.videoHeight, 0, 0, outW, outH);
+    }
+    setBag({ snapshot });
+  };
 
   return (
     <div className="cam">
@@ -384,6 +442,9 @@ export default function Camera() {
           aria-label="화면 비율"
         >
           {ratio.label}
+        </button>
+        <button className="chip" onClick={() => update({ facing: settings.facing === 'environment' ? 'user' : 'environment' })} aria-label="전면·후면 전환">
+          <Icon name="flip" />
         </button>
         <button className="chip" onClick={() => setSheet(true)} aria-label="설정 더 보기">
           <Icon name="more" />
@@ -425,14 +486,11 @@ export default function Camera() {
         )}
       </div>
 
-      <nav className="films" aria-label="카메라 선택">
-        {PROFILES.map((p) => (
-          <button key={p.id} className={`film ${p.id === profile.id ? 'is-on' : ''}`} aria-pressed={p.id === profile.id} onClick={() => { update({ profileId: p.id }); setSuggest(null); }}>
-            <span className="film-name">{p.name}</span>
-            <span className="film-iso">{p.iso}</span>
-          </button>
-        ))}
-      </nav>
+      <button className="now-camera" onClick={openBag}>
+        <span className="now-name">{profile.name}</span>
+        <span className="now-iso">ISO {profile.iso}</span>
+        <span className="now-change">바꾸기</span>
+      </button>
 
       <div className="cam-dials">
         <div className="lenses" role="radiogroup" aria-label="렌즈">
@@ -452,8 +510,8 @@ export default function Camera() {
           {developing > 0 && <span className="developing">현상 중</span>}
         </button>
         <button className={`shutter ${countdown ? 'is-timer' : ''}`} onClick={onShutter} disabled={cam.state.status !== 'ready'} aria-label={countdown ? '타이머 취소' : '셔터'} />
-        <button className="flip" onClick={() => update({ facing: settings.facing === 'environment' ? 'user' : 'environment' })} aria-label="전면·후면 전환">
-          <Icon name="flip" />
+        <button className="body-btn" onClick={openBag} aria-label={`카메라 바꾸기, 지금은 ${profile.name}`}>
+          <CameraBody profileId={profile.id} />
         </button>
       </footer>
 
@@ -467,6 +525,18 @@ export default function Camera() {
           onLevel={toggleLevel}
           onFiles={onFiles}
           ddayValue={dday}
+        />
+      )}
+      {bag && (
+        <CameraBag
+          current={profile.id}
+          snapshot={bag.snapshot}
+          recommended={recommended}
+          onSelect={(id) => {
+            update({ profileId: id });
+            setSuggest(null);
+          }}
+          onClose={() => setBag(null)}
         />
       )}
       {viewer && (
@@ -598,6 +668,12 @@ function SettingsSheet({
           <Toggle label="격자" on={settings.grid} onChange={(v) => update({ grid: v })} />
           <Toggle label="수평계" on={settings.level} onChange={() => onLevel()} />
           <Toggle label="셔터음" on={settings.sound} onChange={(v) => update({ sound: v })} />
+          <Toggle
+            label="고해상도 촬영"
+            hint={isIOS ? '앱 안에서 찍는 사진이 더 선명해지지만 미리보기가 느려질 수 있어요.' : '갤럭시는 꺼 둬도 원본 해상도로 찍혀요. 켜면 미리보기만 무거워집니다.'}
+            on={settings.hiRes}
+            onChange={(v) => update({ hiRes: v })}
+          />
         </div>
 
         <p className="sheet-note">

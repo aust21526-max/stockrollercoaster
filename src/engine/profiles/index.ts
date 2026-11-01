@@ -39,6 +39,7 @@ export const PROFILES: FilmProfile[] = [
   {
     id: 'portrait400',
     name: 'Dear Skin',
+    film: 'Kodak Portra 400',
     reference: 'Kodak Portra 400 · Frontier scan',
     iso: 400,
     tagline: '피부가 가장 예쁘게 나오는 카메라. 부드럽고 따뜻해요.',
@@ -73,6 +74,7 @@ export const PROFILES: FilmProfile[] = [
   {
     id: 'gold200',
     name: 'Sunday Gold',
+    film: 'Kodak Gold 200',
     reference: 'Kodak Gold 200 · Noritsu scan',
     iso: 200,
     tagline: '노란 햇살이 내려앉은 듯한 일상. 맑은 날 산책용.',
@@ -106,6 +108,7 @@ export const PROFILES: FilmProfile[] = [
   {
     id: 'superia400',
     name: 'City Green',
+    film: 'Fujifilm Superia 400',
     reference: 'Fujifilm Superia X-TRA 400 · Frontier scan',
     iso: 400,
     tagline: '초록과 파랑이 맑게 살아나는 후지의 일상 색감.',
@@ -141,6 +144,7 @@ export const PROFILES: FilmProfile[] = [
   {
     id: 'pastel400',
     name: 'Cloud Pastel',
+    film: 'Fujifilm Pro 400H',
     reference: 'Fujifilm Pro 400H · overexposed, Frontier scan',
     iso: 400,
     tagline: '한 스톱 밝게 찍은 듯 뽀얀 파스텔. 흐린 날이 오히려 예뻐요.',
@@ -176,6 +180,7 @@ export const PROFILES: FilmProfile[] = [
   {
     id: 'ektar100',
     name: 'Vivid Trip',
+    film: 'Kodak Ektar 100',
     reference: 'Kodak Ektar 100',
     iso: 100,
     tagline: '세상에서 가장 고운 입자와 진한 색. 여행 풍경용.',
@@ -211,6 +216,7 @@ export const PROFILES: FilmProfile[] = [
   {
     id: 'flash800',
     name: 'Party Flash',
+    film: '일회용 카메라와 플래시',
     reference: 'Disposable camera (Fuji QuickSnap / Kodak FunSaver), flash on',
     iso: 800,
     tagline: '정면 플래시, 진한 비네팅, 날짜 각인까지. 그날의 분위기 그대로.',
@@ -248,6 +254,7 @@ export const PROFILES: FilmProfile[] = [
   {
     id: 'tungsten800',
     name: 'Neon Night',
+    film: 'CineStill 800T',
     reference: 'CineStill 800T (Kodak Vision3 500T, remjet removed)',
     iso: 800,
     tagline: '불빛마다 붉은 번짐이 생기는 영화 같은 밤.',
@@ -285,6 +292,7 @@ export const PROFILES: FilmProfile[] = [
   {
     id: 'mono400',
     name: 'Silver 400',
+    film: 'Ilford HP5, Kodak Tri-X',
     reference: 'Ilford HP5 Plus / Kodak Tri-X 400',
     iso: 400,
     tagline: '거친 입자와 깊은 그림자의 흑백. 표정과 빛이 남아요.',
