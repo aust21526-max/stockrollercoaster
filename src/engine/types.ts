@@ -155,6 +155,10 @@ export interface FilmProfile {
   /** Lab correction target: how much auto WB to apply (0 keeps the stock's native cast). */
   labWhiteBalance: number;
   look: LookParams;
+  /** Made by the user ("실제 필름과 맞추기"). */
+  custom?: boolean;
+  /** Which built-in camera body to draw for a custom camera. */
+  bodyOf?: string;
 }
 
 export interface DevelopOptions {

@@ -890,6 +890,7 @@ function SettingsSheet({
         <p className="sheet-note">
           사진은 이 기기 안에만 저장됩니다. 찍은 사진에서 "사진 앱에 저장"을 눌러 갤러리로 옮겨 주세요.
         </p>
+        <a className="sheet-link" href="#/match">실제 필름과 맞추기</a>
         <a className="sheet-link" href="#/lab">현상실 열기</a>
       </section>
     </div>

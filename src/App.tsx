@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 
 const Camera = lazy(() => import('./camera/Camera'));
 const Lab = lazy(() => import('./lab/Lab'));
+const Match = lazy(() => import('./lab/Match'));
 
 /** Hash routes keep the PWA working offline without server rewrites. */
 function useRoute() {
@@ -16,5 +17,5 @@ function useRoute() {
 
 export default function App() {
   const route = useRoute();
-  return <Suspense fallback={null}>{route === '#/lab' ? <Lab /> : <Camera />}</Suspense>;
+  return <Suspense fallback={null}>{route === '#/lab' ? <Lab /> : route === '#/match' ? <Match /> : <Camera />}</Suspense>;
 }

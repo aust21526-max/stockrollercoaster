@@ -421,3 +421,59 @@ export const PROFILES: FilmProfile[] = [
 ];
 
 export const profileById = (id: string) => PROFILES.find((p) => p.id === id) ?? PROFILES[0];
+
+// ---------------------------------------------------------------------------
+// User cameras and darkroom edits, stored on this device.
+// They are merged into PROFILES at startup so every screen sees them.
+
+const CUSTOM_KEY = 'custom.profiles.v1';
+const OVERRIDES_KEY = 'darkroom.overrides.v1';
+
+/** Built-in looks as shipped, for "기본값으로 되돌리기". */
+const DEFAULT_LOOKS = new Map(PROFILES.map((p) => [p.id, p.look]));
+export const defaultLook = (id: string) => DEFAULT_LOOKS.get(id) ?? profileById(id).look;
+
+function read<T>(key: string, fallback: T): T {
+  try {
+    return JSON.parse(localStorage.getItem(key) ?? '') as T;
+  } catch {
+    return fallback;
+  }
+}
+function write(key: string, value: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* storage unavailable: lasts for this session */
+  }
+}
+
+/** Apply darkroom edits (built-in cameras only) so the camera uses them too. */
+export function applyOverrides(overrides: Record<string, LookParams>) {
+  for (const p of PROFILES) {
+    if (p.custom) continue;
+    p.look = overrides[p.id] ?? DEFAULT_LOOKS.get(p.id) ?? p.look;
+  }
+}
+
+export function customProfiles(): FilmProfile[] {
+  return PROFILES.filter((p) => p.custom);
+}
+
+export function saveCustomProfile(profile: FilmProfile) {
+  const i = PROFILES.findIndex((p) => p.id === profile.id);
+  if (i >= 0) PROFILES[i] = profile;
+  else PROFILES.push(profile);
+  write(CUSTOM_KEY, customProfiles());
+}
+
+export function deleteCustomProfile(id: string) {
+  const i = PROFILES.findIndex((p) => p.id === id && p.custom);
+  if (i >= 0) PROFILES.splice(i, 1);
+  write(CUSTOM_KEY, customProfiles());
+}
+
+if (typeof window !== 'undefined') {
+  for (const p of read<FilmProfile[]>(CUSTOM_KEY, [])) if (p?.id && p.look && !PROFILES.some((x) => x.id === p.id)) PROFILES.push({ ...p, custom: true });
+  applyOverrides(read<Record<string, LookParams>>(OVERRIDES_KEY, {}));
+}
