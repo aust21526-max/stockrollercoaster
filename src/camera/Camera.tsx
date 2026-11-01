@@ -21,6 +21,9 @@ import './camera.css';
 
 /** Live preview long-side cap in device pixels. Adaptive scale works below this. */
 const PREVIEW_MAX = 1080;
+/** Video mode: 8mm cadence and a size phones can render and encode smoothly. */
+const VIDEO_FPS = 18;
+const VIDEO_MAX = 720;
 const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 /** Flash strength for the film simulation, or 0. */
@@ -55,8 +58,8 @@ export default function Camera() {
   const [fxSheet, setFxSheet] = useState(false);
   const [recording, setRecording] = useState<{ length: number } | null>(null);
   const recordingRef = useRef(false);
-  /** Set when a recording starts: the preview jumps back to full resolution first. */
-  const fullResRef = useRef(false);
+  /** The recorder's canvas track: we hand it each frame we draw (no extra readbacks). */
+  const captureTrackRef = useRef<(MediaStreamTrack & { requestFrame?: () => void }) | null>(null);
   const [sheet, setSheet] = useState(false);
   const [viewer, setViewer] = useState<{ ids: string[]; index: number } | null>(null);
   const [rolls, setRolls] = useState<Roll[]>([]);
@@ -132,18 +135,19 @@ export default function Camera() {
       const finder = finderRef.current;
       if (!r || !finder || video.readyState < 2 || !video.videoWidth) return;
       if (video.currentTime === lastFrame) return;
-      lastFrame = video.currentTime;
       const now = performance.now();
+      const videoMode = live.current.settings.mode === 'video';
+      // 8mm runs at 18 frames a second: skip camera frames in between.
+      if (videoMode && now - last < 1000 / VIDEO_FPS - 4) return;
+      lastFrame = video.currentTime;
       avg = avg * 0.9 + (now - last) * 0.1;
       last = now;
-      if (fullResRef.current) {
-        scale = 1;
-        fullResRef.current = false;
-      }
       // Never change the canvas size mid-recording: the recorder would glitch.
       if (!recordingRef.current) {
-        if (avg > 45 && scale > 0.5) scale = Math.max(0.5, scale - 0.05);
-        else if (avg < 36 && scale < 1) scale = Math.min(1, scale + 0.02);
+        const slow = videoMode ? 1000 / VIDEO_FPS + 15 : 45;
+        const fast = videoMode ? 1000 / VIDEO_FPS + 6 : 36;
+        if (avg > slow && scale > 0.5) scale = Math.max(0.5, scale - 0.05);
+        else if (avg < fast && scale < 1) scale = Math.min(1, scale + 0.02);
       }
 
       const { settings: s, profile: p, digitalZoom: z, shaderEv, aspect } = live.current;
@@ -160,7 +164,7 @@ export default function Camera() {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       let w = Math.round(box.width * dpr);
       let h = Math.round(w / aspect);
-      const k = Math.min(1, PREVIEW_MAX / Math.max(w, h), crop.width / w) * scale;
+      const k = Math.min(1, (videoMode ? VIDEO_MAX : PREVIEW_MAX) / Math.max(w, h), crop.width / w) * scale;
       w = Math.max(2, Math.round(w * k));
       h = Math.max(2, Math.round(h * k));
       r.render(
@@ -180,6 +184,8 @@ export default function Camera() {
         w,
         h,
       );
+      // Recording: push exactly this frame to the recorder.
+      captureTrackRef.current?.requestFrame?.();
     };
     // Render exactly once per camera frame where the browser supports it.
     if (video.requestVideoFrameCallback) {
@@ -213,7 +219,7 @@ export default function Camera() {
     let streak = 0;
     const id = setInterval(() => {
       const video = cam.videoRef.current;
-      if (!video?.videoWidth) return;
+      if (!video?.videoWidth || recordingRef.current) return;
       const st = analyzeScene(video, video.videoWidth, video.videoHeight);
       setStats(st);
       const p = live.current.profile;
@@ -515,11 +521,16 @@ export default function Camera() {
     const length = settings.clipLength;
     const p = profile;
     const s = settings;
-    // Full-resolution preview for the clip, then hold it there while recording.
-    fullResRef.current = true;
+    // Hold the preview size steady for the whole clip.
     recordingRef.current = true;
-    await new Promise((res) => setTimeout(res, 120));
-    const stream = canvas.captureStream(24);
+    // Frame-driven capture where supported: the recorder gets each frame we draw, once.
+    let stream = canvas.captureStream(0);
+    const track = stream.getVideoTracks()[0] as MediaStreamTrack & { requestFrame?: () => void };
+    if (track && typeof track.requestFrame === 'function') captureTrackRef.current = track;
+    else {
+      stream.getTracks().forEach((t) => t.stop());
+      stream = canvas.captureStream(VIDEO_FPS);
+    }
     let mic: MediaStream | null = null;
     if (s.clipSound) {
       try {
@@ -536,19 +547,21 @@ export default function Camera() {
       mic?.getTracks().forEach((t) => t.stop());
       stream.getTracks().forEach((t) => t.stop());
       recordingRef.current = false;
+      captureTrackRef.current = null;
       showToast(`영상을 찍지 못했습니다: ${(e as Error).message}`);
       return;
     }
     const chunks: Blob[] = [];
     rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
     const takenAt = new Date();
-    let poster: Blob | null = null;
-    setTimeout(() => canvas.toBlob((b) => (poster = b), 'image/jpeg', 0.86), 300);
     rec.onstop = async () => {
       mic?.getTracks().forEach((t) => t.stop());
       stream.getVideoTracks().forEach((t) => t.stop());
+      captureTrackRef.current = null;
       recordingRef.current = false;
       setRecording(null);
+      // Poster from the last frame, made after recording so it never stalls the clip.
+      const poster = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/jpeg', 0.86));
       haptic(15);
       if (s.sound) shutterSound();
       const blob = new Blob(chunks, { type: type.split(';')[0] });
@@ -578,8 +591,14 @@ export default function Camera() {
     if (s.sound) shutterSound();
     haptic(15);
     rec.start(250);
-    // Exactly the chosen length; the shutter cannot cut it short.
-    setTimeout(() => rec.state !== 'inactive' && rec.stop(), length * 1000);
+    // Exactly the chosen length, counted from the first recorded frame (the
+    // recorder needs a moment to start); the shutter cannot cut it short.
+    const t0 = performance.now();
+    await new Promise<void>((res) => {
+      const wait = () => (rec.state === 'recording' && performance.now() - t0 > 1000 / VIDEO_FPS ? res() : requestAnimationFrame(wait));
+      requestAnimationFrame(wait);
+    });
+    setTimeout(() => rec.state !== 'inactive' && rec.stop(), length * 1000 + 1000 / VIDEO_FPS);
   }, [settings, profile, showToast]);
 
   const onShutter = useCallback(() => {
