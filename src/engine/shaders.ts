@@ -205,7 +205,8 @@ void main() {
   } else {
     lin = dec(texture(uPrep, uv).rgb);
   }
-  float sw = clamp(uSoften * 0.65 + uCornerSoft * smoothstep(0.3, 1.0, r), 0.0, 1.0);
+  // Softness only toward the far corners, like a real lens; the centre stays sharp.
+  float sw = clamp(uSoften * 0.65 + uCornerSoft * smoothstep(0.55, 1.0, r), 0.0, 1.0);
   lin = mix(lin, dec(texture(uSoft, uv).rgb), sw);
 
   vec3 glow = dec(texture(uGlow, uv).rgb);

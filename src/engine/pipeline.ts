@@ -101,7 +101,8 @@ export class FilmRenderer {
     const crop = opts.crop ?? FULL_FRAME;
     const prep = this.target('prep', outW, outH);
     const fast = !!opts.fast;
-    const softDiv = fast ? 4 : 2;
+    // Same softness texture size as a capture, so the preview is as sharp as the photo.
+    const softDiv = 2;
     const glowDiv = fast ? 8 : 4;
     const halfW = Math.max(1, Math.round(outW / softDiv));
     const halfH = Math.max(1, Math.round(outH / softDiv));
