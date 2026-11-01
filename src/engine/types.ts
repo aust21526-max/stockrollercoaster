@@ -137,6 +137,8 @@ export interface FilmProfile {
   name: string;
   /** What real stock this is modelled after — for our own reference. */
   reference: string;
+  /** Short film name shown to the user. */
+  film: string;
   iso: number;
   /** One-line character, written for the user. */
   tagline: string;
@@ -162,6 +164,11 @@ export interface DevelopOptions {
   ev?: number;
   /** Overrides look.flash (flash mode on the camera). */
   flash?: number;
+  /**
+   * Live-preview mode: blur chains at lower resolution and fewer passes.
+   * Looks nearly identical at screen size and costs roughly a third of the GPU time.
+   */
+  fast?: boolean;
 }
 
 /**

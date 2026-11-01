@@ -91,12 +91,15 @@ export class FilmRenderer {
     const aspect = outW / outH;
     const crop = opts.crop ?? FULL_FRAME;
     const prep = this.target('prep', outW, outH);
-    const halfW = Math.max(1, Math.round(outW / 2));
-    const halfH = Math.max(1, Math.round(outH / 2));
+    const fast = !!opts.fast;
+    const softDiv = fast ? 4 : 2;
+    const glowDiv = fast ? 8 : 4;
+    const halfW = Math.max(1, Math.round(outW / softDiv));
+    const halfH = Math.max(1, Math.round(outH / softDiv));
     const softA = this.target('softA', halfW, halfH);
     const softB = this.target('softB', halfW, halfH);
-    const qW = Math.max(1, Math.round(outW / 4));
-    const qH = Math.max(1, Math.round(outH / 4));
+    const qW = Math.max(1, Math.round(outW / glowDiv));
+    const qH = Math.max(1, Math.round(outH / glowDiv));
     const glowA = this.target('glowA', qW, qH);
     const glowB = this.target('glowB', qW, qH);
 
@@ -126,18 +129,18 @@ export class FilmRenderer {
     // Spread relative to frame height so a preview and a full-res export look alike.
     const softSpread = Math.max(0.35, outH / 2500);
     this.blurPass(prep, softA, [1, 0], softSpread);
-    this.blurPass(softA, softB, [0, 1], softSpread / 2);
+    this.blurPass(softA, softB, [0, 1], softSpread / softDiv);
 
     // 2b. glow chain (quarter res) — halation and bloom
     {
       const p = this.use('extract', glowA);
       this.bindTex(0, prep.tex, p, 'uPrep');
-      gl.uniform2f(p.loc.get('uTexel')!, 0.5 / prep.w, 0.5 / prep.h);
+      gl.uniform2f(p.loc.get('uTexel')!, (glowDiv / 4) * 0.5 / prep.w, (glowDiv / 4) * 0.5 / prep.h);
       gl.uniform1f(p.loc.get('uThreshold')!, look.halation.threshold);
       this.draw();
       const radiusPx = Math.max(1, look.halation.radius * qH);
-      const spread = Math.max(1, radiusPx / 6 / Math.SQRT2);
-      for (let i = 0; i < 2; i++) {
+      const spread = Math.max(1, radiusPx / 6 / (fast ? 1 : Math.SQRT2));
+      for (let i = 0; i < (fast ? 1 : 2); i++) {
         this.blurPass(glowA, glowB, [1, 0], spread);
         this.blurPass(glowB, glowA, [0, 1], spread);
       }
