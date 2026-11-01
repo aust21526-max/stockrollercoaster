@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/engine/analyze.ts","./src/engine/curves.ts","./src/engine/pipeline.ts","./src/engine/recommend.ts","./src/engine/shaders.ts","./src/engine/types.ts","./src/engine/profiles/index.ts","./src/lab/Lab.tsx","./src/lab/testChart.ts","./vite.config.ts"],"version":"5.9.3"}
